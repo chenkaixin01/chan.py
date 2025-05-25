@@ -29,7 +29,7 @@ def xgb_evaluate(max_depth,eta, gamma, colsample_bytree, learning_rate, min_chil
     # model = xgb.train(
     #     params,
     #     dtrain,
-    #     num_boost_round=100,
+    #     num_boost_round=300,
     #     evals=[(dtrain, "train"), (dval, "eval")],
     #     early_stopping_rounds=50,
     #     verbose_eval=False
@@ -71,17 +71,18 @@ optimizer = BayesianOptimization(
     verbose=2
 )
 
-# 开始优化
-optimizer.maximize(
-    init_points=10,  # 随机探索点
-    n_iter=250        # 贝叶斯优化迭代次数
-)
+# # 开始优化
+# optimizer.maximize(
+#     init_points=10,  # 随机探索点
+#     n_iter=250        # 贝叶斯优化迭代次数
+# )
 
 # 输出最优结果
 # print("Best result:", optimizer.max)
 
 # 获取最优超参数
-best_params = optimizer.max['params']
+# best_params = optimizer.max['params']
+best_params = {'colsample_bytree': 1.0, 'eta': 0.1, 'gamma': 0.0, 'learning_rate': 0.3, 'max_depth': 3.0, 'min_child_weight': 4.615155109848909, 'reg_alpha': 2.134236173880166, 'reg_lambda': 5.0, 'scale_pos_weight': 5.0, 'subsample': 1.0}
 best_params['max_depth'] = int(best_params['max_depth'])
 best_params['min_child_weight'] = int(best_params['min_child_weight'])
 
@@ -97,5 +98,5 @@ cv_result = xgb.cv(
     verbose_eval=False
 )
 best_num_round = cv_result.shape[0]  # 最优轮数 = best_iteration
-print("Best params: ", optimizer.max)
+# print("Best params: ", optimizer.max)
 print("Best num_round: ", best_num_round)

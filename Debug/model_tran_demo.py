@@ -28,7 +28,7 @@ dtest = xgb.DMatrix(test_file_name + "?format=libsvm")  # load sample
 # param = {'device': 'cuda', 'tree_method': 'hist', 'eta': 0.3, 'objective': 'binary:logistic','max_depth': 2,
 #          'eval_metric': 'auc', 'reg_alpha':0.1,'reg_lambda':1.0}
 # param = {'colsample_bytree': 0.4329211314861462, 'eta': 0.8442373851277825, 'gamma': 1.4581511825290598, 'learning_rate': 0.2453380070530987, 'max_depth': 3, 'min_child_weight': 5.916319324973441, 'reg_alpha': 0.3244133249128073, 'reg_lambda': 0.7653459681561497, 'scale_pos_weight': 2.868823840171599, 'subsample': 0.662752746276055}
-param = {'colsample_bytree': 1.0, 'eta': 0.1, 'gamma': 2.8748626916988798, 'learning_rate': 0.3, 'max_depth': 1.0, 'min_child_weight': 5.10117697941638, 'reg_alpha': 0.0, 'reg_lambda': 0.0, 'scale_pos_weight': 2.043702389835198, 'subsample': 1.0}
+param = {'colsample_bytree': 1.0, 'eta': 0.1, 'gamma': 0.0, 'learning_rate': 0.3, 'max_depth': 3.0, 'min_child_weight': 4.615155109848909, 'reg_alpha': 2.134236173880166, 'reg_lambda': 5.0, 'scale_pos_weight': 5.0, 'subsample': 1.0}
 param['device'] = 'cuda'
 param['tree_method'] = 'hist'
 param['objective'] = 'binary:logistic'
@@ -40,7 +40,7 @@ evals_result = {}
 bst = xgb.train(
     param,
     dtrain,
-    num_boost_round=8,
+    num_boost_round=78,
     evals=[(dtrain, "train"), (dval, "val")],
     early_stopping_rounds=10,
     evals_result=evals_result,
@@ -78,6 +78,6 @@ else:
     print("未启用早停法或版本不兼容")
 y_true = dtest.get_label()
 print(f"Test AUC: {roc_auc_score(y_true, y_pred):.4f}")
-y_pred_labels = [1 if x > 0.46 else 0 for x in y_pred]
+y_pred_labels = [1 if x > 0.67 else 0 for x in y_pred]
 print("Accuracy:", accuracy_score(y_true, y_pred_labels))
 print("\nClassification Report:\n", classification_report(y_true, y_pred_labels))

@@ -156,6 +156,8 @@ class DataFrameAPI(CCommonStockApi):
         df['trix'] = ta.TRIX(df)
         df['ultosc'] = ta.ULTOSC(df)
         df['willr'] = ta.WILLR(df)
+        df['willr_slope'] = ta.LINEARREG_SLOPE(df['willr'], timeperiod=5)
+        df['willr_std'] = df['willr'].rolling(window=5).std()
 
         ### 交易量指示器 Volume Indicators ###
         df['ad'] = ta.AD(df)

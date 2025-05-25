@@ -405,6 +405,8 @@ def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
         "trix": dataframe['trix'][index],
 
         "willr": dataframe['willr'][index],
+        "willr_slope": dataframe['willr_slope'][index],
+        "willr_std": dataframe['willr_std'][index],
 
         ### 交易量指示器 Volume Indicators ###
 
@@ -674,7 +676,7 @@ def write_libsvm(file_name: str, dict: Dict[int, T_SAMPLE_INFO], bsp_academy, fe
             negative += 1
         features = []  # List[(idx, value)]
         for feature_name, value in feature_info['feature'].items():
-            # if(feature_name in selected_feature_names):
+            if(feature_name in selected_feature_names):
                 if feature_name not in feature_meta:
                     cur_feature_idx = feature_idx[-1]
                     feature_meta[feature_name] = cur_feature_idx
