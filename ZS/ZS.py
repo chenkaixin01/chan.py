@@ -92,6 +92,7 @@ class CZS(Generic[LINE_TYPE]):
         self.__mid: float = (self.__low + self.__high) / 2  # 中枢的中点
         self.clean_cache()
 
+    # 中枢是否只有一笔
     def is_one_bi_zs(self):
         assert self.end_bi is not None
         return self.begin_bi.idx == self.end_bi.idx

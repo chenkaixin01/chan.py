@@ -30,7 +30,7 @@ if __name__ == "__main__":
     # print(importances)
     features_index = []
     for i in range(importances.shape[0]):
-        if importances[i] > 0.01:
+        if importances[i] > 0:
             features_index.append(i)
             print(i,importances[i])
     cols = [k for k, v in meta.items()]

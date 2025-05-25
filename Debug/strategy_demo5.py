@@ -25,6 +25,7 @@ from imblearn.combine import SMOTEENN,SMOTETomek
 from imblearn.over_sampling import SMOTE
 from imblearn.under_sampling import EditedNearestNeighbours
 from tsfresh import extract_features,select_features
+from ZS.ZS import CZS
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
 
@@ -80,12 +81,9 @@ def new_stragety_feature(last_klu, dataframe: DataFrame, index):
         "macd": dataframe['macd'][index],
         "macdsignal": dataframe['macdsignal'][index],
         "macdhist": dataframe['macdhist'][index],
-        "macdext_macd": dataframe['macdext_macd'][index],
-        "macdext_macdsignal": dataframe['macdext_macdsignal'][index],
-        "macdext_macdhist": dataframe['macdext_macdhist'][index],
-        "macdfix_macd": dataframe['macdfix_macd'][index],
-        "macdfix_macdsignal": dataframe['macdfix_macdsignal'][index],
-        "macdfix_macdhist": dataframe['macdfix_macdhist'][index],
+        "macd_diff": dataframe['macd_diff'][index],
+        "macd_hist_slope": dataframe['macd_hist_slope'][index],
+        "macd_hist_std": dataframe['macd_hist_std'][index],
         "mfi": dataframe['mfi'][index],
         "minus_di": dataframe['minus_di'][index],
         "minus_dm": dataframe['minus_dm'][index],
@@ -136,57 +134,6 @@ def new_stragety_feature(last_klu, dataframe: DataFrame, index):
         "natr": dataframe['natr'][index],
         "trange": dataframe['trange'][index],
 
-        ### 形态识别 Pattern Recognition ###
-        "cdl3blackcrows": dataframe['cdl3blackcrows'][index],
-        "cdl3inside": dataframe['cdl3inside'][index],
-        "cdl3linestrike": dataframe['cdl3linestrike'][index],
-        "cdl3outside": dataframe['cdl3outside'][index],
-        "cdl3whitesoldiers": dataframe['cdl3whitesoldiers'][index],
-        "cdladvanceblock": dataframe['cdladvanceblock'][index],
-        "cdlbelthold": dataframe['cdlbelthold'][index],
-        "cdlclosingmarubozu": dataframe['cdlclosingmarubozu'][index],
-        "cdldarkcloudcover": dataframe['cdldarkcloudcover'][index],
-        "cdldoji": dataframe['cdldoji'][index],
-        "cdldojistar": dataframe['cdldojistar'][index],
-        "cdldragonflydoji": dataframe['cdldragonflydoji'][index],
-        "cdlengulfing": dataframe['cdlengulfing'][index],
-        "cdleveningdojistar": dataframe['cdleveningdojistar'][index],
-        "cdleveningstar": dataframe['cdleveningstar'][index],
-        "cdlgapsidesidewhite": dataframe['cdlgapsidesidewhite'][index],
-        "cdlgravestonedoji": dataframe['cdlgravestonedoji'][index],
-        "cdlhammer": dataframe['cdlhammer'][index],
-        "cdlhangingman": dataframe['cdlhangingman'][index],
-        "cdlharami": dataframe['cdlharami'][index],
-        "cdlharamicross": dataframe['cdlharamicross'][index],
-        "cdlhighwave": dataframe['cdlhighwave'][index],
-        "cdlhikkake": dataframe['cdlhikkake'][index],
-        "cdlhikkakemod": dataframe['cdlhikkakemod'][index],
-        "cdlhomingpigeon": dataframe['cdlhomingpigeon'][index],
-        "cdlidentical3crows": dataframe['cdlidentical3crows'][index],
-        "cdlinneck": dataframe['cdlinneck'][index],
-        "cdlinvertedhammer": dataframe['cdlinvertedhammer'][index],
-        "cdllongleggeddoji": dataframe['cdllongleggeddoji'][index],
-        "cdllongline": dataframe['cdllongline'][index],
-        "cdlmarubozu": dataframe['cdlmarubozu'][index],
-        "cdlmatchinglow": dataframe['cdlmatchinglow'][index],
-        "cdlmorningdojistar": dataframe['cdlmorningdojistar'][index],
-        "cdlmorningstar": dataframe['cdlmorningstar'][index],
-        "cdlonneck": dataframe['cdlonneck'][index],
-        "cdlpiercing": dataframe['cdlpiercing'][index],
-        "cdlrickshawman": dataframe['cdlrickshawman'][index],
-        "cdlrisefall3methods": dataframe['cdlrisefall3methods'][index],
-        "cdlseparatinglines": dataframe['cdlseparatinglines'][index],
-        "cdlshootingstar": dataframe['cdlshootingstar'][index],
-        "cdlshortline": dataframe['cdlshortline'][index],
-        "cdlspinningtop": dataframe['cdlspinningtop'][index],
-        "cdlstalledpattern": dataframe['cdlstalledpattern'][index],
-        "cdlsticksandwich": dataframe['cdlsticksandwich'][index],
-        "cdltakuri": dataframe['cdltakuri'][index],
-        "cdltasukigap": dataframe['cdltasukigap'][index],
-        "cdlthrusting": dataframe['cdlthrusting'][index],
-        "cdltristar": dataframe['cdltristar'][index],
-        "cdlxsidegap3methods": dataframe['cdlxsidegap3methods'][index],
-
         ### 统计函数 Statistic Functions ###
         "beta": dataframe['beta'][index],
         "correl": dataframe['correl'][index],
@@ -203,73 +150,7 @@ def new_stragety_feature(last_klu, dataframe: DataFrame, index):
         "bb_lowerband": dataframe['bb_lowerband'][index],
         "bb_upperband": dataframe['bb_upperband'][index],
         "bb_middleband": dataframe['bb_middleband'][index],
-        # dema
-        "dema": dataframe['dema'][index],
-        # ema
-        "ema_7": dataframe['ema_7'][index],
-        "close_ema_7_diff":dataframe['close_ema_7_diff'][index],
-        "close_ema_7_ratio":dataframe['close_ema_7_ratio'][index],
 
-        "ema_25": dataframe['ema_25'][index],
-        "close_ema_25_diff": dataframe['close_ema_25_diff'][index],
-        "ema_7_25_diff":dataframe['ema_7_25_diff'][index],
-        "close_ema_25_ratio": dataframe['close_ema_25_ratio'][index],
-        "ema_7_25_ratio":dataframe['ema_7_25_ratio'][index],
-
-        "ema_99": dataframe['ema_99'][index],
-        "close_ema_99_diff": dataframe['close_ema_99_diff'][index],
-        "ema_7_99_diff": dataframe['ema_7_99_diff'][index],
-        "ema_25_99_diff": dataframe['ema_25_99_diff'][index],
-        "close_ema_99_ratio": dataframe['close_ema_99_ratio'][index],
-        "ema_7_99_ratio": dataframe['ema_7_99_ratio'][index],
-        "ema_25_99_ratio": dataframe['ema_25_99_ratio'][index],
-
-        # ht_trendline                                                                     ,
-        "ht_trendline": dataframe['ht_trendline'][index],
-        # kama 考夫曼均线                                                                    ,
-        "kama_7": dataframe['kama_7'][index],
-        "close_kama_7_diff": dataframe['close_kama_7_diff'][index],
-        "close_kama_7_ratio": dataframe['close_kama_7_ratio'][index],
-
-        "kama_25": dataframe['kama_25'][index],
-        "close_kama_25_diff": dataframe['close_kama_25_diff'][index],
-        "kama_7_25_diff": dataframe['kama_7_25_diff'][index],
-        "close_kama_25_ratio": dataframe['close_kama_25_ratio'][index],
-        "kama_7_25_ratio": dataframe['kama_7_25_ratio'][index],
-
-        "kama_99": dataframe['kama_99'][index],
-        "close_kama_99_diff":dataframe['close_kama_99_diff'][index],
-        "kama_7_99_diff": dataframe['kama_7_99_diff'][index],
-        "kama_25_99_diff": dataframe['kama_25_99_diff'][index],
-        "close_kama_99_ratio":dataframe['close_kama_99_ratio'][index],
-        "kama_7_99_ratio": dataframe['kama_7_99_ratio'][index],
-        "kama_25_99_ratio": dataframe['kama_25_99_ratio'][index],
-
-        # ma                                                                               ,
-        "ma_7": dataframe['ma_7'][index],
-        "close_ma_7_diff": dataframe['close_ma_7_diff'][index],
-        "close_ma_7_ratio": dataframe['close_ma_7_ratio'][index],
-
-        "ma_25": dataframe['ma_25'][index],
-        "close_ma_25_diff": dataframe['close_ma_25_diff'][index],
-        "ma_7_25_diff": dataframe['ma_7_25_diff'][index],
-        "close_ma_25_ratio": dataframe['close_ma_25_ratio'][index],
-        "ma_7_25_ratio": dataframe['ma_7_25_ratio'][index],
-
-        "ma_99": dataframe['ma_99'][index],
-        "close_ma_99_diff": dataframe['close_ma_99_diff'][index],
-        "ma_7_99_diff": dataframe['ma_7_99_diff'][index],
-        "ma_25_99_diff": dataframe['ma_25_99_diff'][index],
-        "close_ma_99_ratio": dataframe['close_ma_99_ratio'][index],
-        "ma_7_99_ratio": dataframe['ma_7_99_ratio'][index],
-        "ma_25_99_ratio": dataframe['ma_25_99_ratio'][index],
-        # mama
-        "mama": dataframe['mama'][index],
-        "fama": dataframe['fama'][index],
-        # midpoint
-        "midpoint": dataframe['midpoint'][index],
-        # midprice
-        "midprice": dataframe['midprice'][index],
         # sar
         "sar": dataframe['sar'][index],
         "close_sar_diff": dataframe['close_sar_diff'][index],
@@ -278,80 +159,7 @@ def new_stragety_feature(last_klu, dataframe: DataFrame, index):
         "sarext": dataframe['sarext'][index],
         "close_sarext_diff": dataframe['close_sarext_diff'][index],
         "close_sarext_ratio": dataframe['close_sarext_ratio'][index],
-        # sma
-        "sma_7": dataframe['sma_7'][index],
-        "close_sma_7_diff": dataframe['close_sma_7_diff'][index],
-        "close_sma_7_ratio": dataframe['close_sma_7_ratio'][index],
 
-        "sma_25": dataframe['sma_25'][index],
-        "close_sma_25_diff": dataframe['close_sma_25_diff'][index],
-        "sma_7_25_diff": dataframe['sma_7_25_diff'][index],
-        "close_sma_25_ratio": dataframe['close_sma_25_ratio'][index],
-        "sma_7_25_ratio": dataframe['sma_7_25_ratio'][index],
-
-        "sma_99": dataframe['sma_99'][index],
-        "close_sma_99_diff": dataframe['close_sma_99_diff'][index],
-        "sma_7_99_diff": dataframe['sma_7_99_diff'][index],
-        "sma_25_99_diff": dataframe['sma_25_99_diff'][index],
-        "close_sma_99_ratio": dataframe['close_sma_99_ratio'][index],
-        "sma_7_99_ratio": dataframe['sma_7_99_ratio'][index],
-        "sma_25_99_ratio": dataframe['sma_25_99_ratio'][index],
-        # tema                                                                             ,
-        "tema_7": dataframe['tema_7'][index],
-        "close_tema_7_diff": dataframe['close_tema_7_diff'][index],
-        "close_tema_7_ratio": dataframe['close_tema_7_ratio'][index],
-
-        "tema_25": dataframe['tema_25'][index],
-        "close_tema_25_diff": dataframe['close_tema_25_diff'][index],
-        "tema_7_25_diff": dataframe['tema_7_25_diff'][index],
-        "close_tema_25_ratio": dataframe['close_tema_25_ratio'][index],
-        "tema_7_25_ratio": dataframe['tema_7_25_ratio'][index],
-
-        "tema_99": dataframe['tema_99'][index],
-        "close_tema_99_diff": dataframe['close_tema_99_diff'][index],
-        "tema_7_99_diff": dataframe['tema_7_99_diff'][index],
-        "tema_25_99_diff": dataframe['tema_25_99_diff'][index],
-        "close_tema_99_ratio": dataframe['close_tema_99_ratio'][index],
-        "tema_7_99_ratio": dataframe['tema_7_99_ratio'][index],
-        "tema_25_99_ratio": dataframe['tema_25_99_ratio'][index],
-
-        # trima                                                                            ,
-        "trima_7": dataframe['trima_7'][index],
-        "close_trima_7_diff": dataframe['close_trima_7_diff'][index],
-        "close_trima_7_ratio": dataframe['close_trima_7_ratio'][index],
-
-        "trima_25": dataframe['trima_25'][index],
-        "close_trima_25_diff": dataframe['close_trima_25_diff'][index],
-        "trima_7_25_diff": dataframe['trima_7_25_diff'][index],
-        "close_trima_25_ratio": dataframe['close_trima_25_ratio'][index],
-        "trima_7_25_ratio": dataframe['trima_7_25_ratio'][index],
-
-        "trima_99": dataframe['trima_99'][index],
-        "close_trima_99_diff": dataframe['close_trima_99_diff'][index],
-        "trima_7_99_diff": dataframe['trima_7_99_diff'][index],
-        "trima_25_99_diff": dataframe['trima_25_99_diff'][index],
-        "close_trima_99_ratio": dataframe['close_trima_99_ratio'][index],
-        "trima_7_99_ratio": dataframe['trima_7_99_ratio'][index],
-        "trima_25_99_ratio": dataframe['trima_25_99_ratio'][index],
-
-        # wma
-        "wma_7": dataframe['wma_7'][index],
-        "close_wma_7_diff":dataframe['close_wma_7_diff'][index],
-        "close_wma_7_ratio":dataframe['close_wma_7_ratio'][index],
-
-        "wma_25": dataframe['wma_25'][index],
-        "close_wma_25_diff": dataframe['close_wma_25_diff'][index],
-        "wma_7_25_diff": dataframe['wma_7_25_diff'][index],
-        "close_wma_25_ratio": dataframe['close_wma_25_ratio'][index],
-        "wma_7_25_ratio": dataframe['wma_7_25_ratio'][index],
-
-        "wma_99": dataframe['wma_99'][index],
-        "close_wma_99_diff": dataframe['close_wma_99_diff'][index],
-        "wma_7_99_diff": dataframe['wma_7_99_diff'][index],
-        "wma_25_99_diff": dataframe['wma_25_99_diff'][index],
-        "close_wma_99_ratio": dataframe['close_wma_99_ratio'][index],
-        "wma_7_99_ratio": dataframe['wma_7_99_ratio'][index],
-        "wma_25_99_ratio": dataframe['wma_25_99_ratio'][index],
         "open_klu_rate": (last_klu.close - last_klu.open) / last_klu.open,
     }
 
@@ -371,12 +179,9 @@ def t1_sell_stragety_feature(last_klu, dataframe: DataFrame, index):
             "macd": dataframe['macd'][index],
             "macdsignal": dataframe['macdsignal'][index],
             "macdhist": dataframe['macdhist'][index],
-            "macdext_macd": dataframe['macdext_macd'][index],
-            "macdext_macdsignal": dataframe['macdext_macdsignal'][index],
-            # "macdext_macdhist": dataframe['macdext_macdhist'][index],
-            "macdfix_macd": dataframe['macdfix_macd'][index],
-            "macdfix_macdsignal": dataframe['macdfix_macdsignal'][index],
-            "macdfix_macdhist": dataframe['macdfix_macdhist'][index],
+            "macd_diff": dataframe['macd_diff'][index],
+            "macd_hist_slope": dataframe['macd_hist_slope'][index],
+            "macd_hist_std": dataframe['macd_hist_std'][index],
             "mfi": dataframe['mfi'][index],
             "minus_di": dataframe['minus_di'][index],
             "minus_dm": dataframe['minus_dm'][index],
@@ -568,6 +373,14 @@ def cal_bi_momentum(bi):
         klc = klc.next
     return (max_high - min_low) * volume_sum
 
+def cal_zs_in_out_bi_macd_area(zs:CZS,dataframe:pd.DataFrame):
+    bi_in = zs.bi_in
+    bi_out = zs.bi_out
+    bi_in_macd_area = dataframe.iloc[bi_in.get_begin_klu().idx:bi_in.get_end_klu().idx + 1]['macdhist'].abs().sum().item()
+    bi_out_macd_area = dataframe.iloc[bi_out.get_begin_klu().idx:bi_out.get_end_klu().idx + 1]['macdhist'].abs().sum().item()
+    macd_area_ratio = bi_out_macd_area / bi_in_macd_area
+    return bi_in_macd_area,bi_out_macd_area,macd_area_ratio
+
 def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame, index, klu_idx, cur_lv_chan):
     features = {
         ### 动量指标 Momentum Indicators ###
@@ -610,24 +423,17 @@ def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
         "beta": dataframe['beta'][index],
 
         ### 重叠研究 Overlap Studies ###
-        "bb_close_lowerband_ratio": dataframe['bb_close_lowerband_ratio'][index],
-        "bb_close_upperband_ratio": dataframe['bb_close_upperband_ratio'][index],
-        "bb_close_middleband_ratio": dataframe['bb_close_middleband_ratio'][index],
-        "bb_upperband_lowerband_ratio": dataframe['bb_upperband_lowerband_ratio'][index],
-        "bb_upperband_middleband_ratio": dataframe['bb_upperband_middleband_ratio'][index],
-        "bb_middleband_lowerband_ratio": dataframe['bb_middleband_lowerband_ratio'][index],
+        "bb_pct": dataframe['bb_pct'][index],
+        "bb_diff_std": dataframe['bb_diff_std'][index],
+        "bb_width_pct": dataframe['bb_width_pct'][index],
+        # "bb_break_upper": dataframe['bb_break_upper'][index],
+        # "bb_break_lower": dataframe['bb_break_lower'][index],
         "bb_lowerband_slope_5": dataframe['bb_lowerband_slope_5'][index],
         "bb_upperband_slope_5": dataframe['bb_upperband_slope_5'][index],
         "bb_middleband_slope_5": dataframe['bb_middleband_slope_5'][index],
         "bb_upperband_lowerband_slope_diff_5": dataframe['bb_upperband_lowerband_slope_diff_5'][index],
         "bb_upperband_middleband_slope_diff_5": dataframe['bb_upperband_middleband_slope_diff_5'][index],
         "bb_middleband_lowerband_slope_diff_5": dataframe['bb_middleband_lowerband_slope_diff_5'][index],
-        "bb_lowerband_slope_20": dataframe['bb_lowerband_slope_20'][index],
-        "bb_upperband_slope_20": dataframe['bb_upperband_slope_20'][index],
-        "bb_middleband_slope_20": dataframe['bb_middleband_slope_20'][index],
-        "bb_upperband_lowerband_slope_diff_20": dataframe['bb_upperband_lowerband_slope_diff_20'][index],
-        "bb_upperband_middleband_slope_diff_20": dataframe['bb_upperband_middleband_slope_diff_20'][index],
-        "bb_middleband_lowerband_slope_diff_20": dataframe['bb_middleband_lowerband_slope_diff_20'][index],
 
         # dema
         "dema": dataframe['dema'][index],
@@ -683,7 +489,7 @@ def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
         "sar": dataframe['sar'][index],
         "close_sar_ratio": dataframe['close_sar_ratio'][index],
         # sarext
-        "sarext": dataframe['sarext'][index],
+        # "sarext": dataframe['sarext'][index],
         # "close_sarext_ratio": dataframe['close_sarext_ratio'][index],
         # sma
         "sma_7": dataframe['sma_7'][index],
@@ -736,6 +542,20 @@ def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
         # "wma_7_99_ratio": dataframe['wma_7_99_ratio'][index],
         # "wma_25_99_ratio": dataframe['wma_25_99_ratio'][index],
         "open_klu_rate": (last_klu.close - last_klu.open) / last_klu.open,
+        "close_slope_5":  dataframe['close_slope_5'][index],
+        "close_slope_14":  dataframe['close_slope_14'][index],
+        "close_pct_5":  dataframe['close_pct_5'][index],
+        "close_mom_10":  dataframe['close_mom_10'][index],
+        "volume_slope_14":  dataframe['volume_slope_14'][index],
+        "vol_close_slope_div":  dataframe['vol_close_slope_div'][index],
+        "volume_pct_5":  dataframe['volume_pct_5'][index],
+        "vol_close_pct_div":  dataframe['vol_close_pct_div'][index],
+        "volume_mom_10":  dataframe['volume_mom_10'][index],
+        "vol_close_mom_div":  dataframe['vol_close_mom_div'][index],
+        "rsi_slope_14":  dataframe['rsi_slope_14'][index],
+        "rsi_slope_5":  dataframe['rsi_slope_5'][index],
+        "rsi_divergence_5":  dataframe['rsi_divergence_5'][index],
+        "rsi_divergence_14":  dataframe['rsi_divergence_14'][index],
 
     }
     features['bottom_strength'] = dataframe.loc[klu_idx - index + klu_idx:index, ['low']].apply(
@@ -772,8 +592,46 @@ def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
     # features['bi_momentum_pre'] = bi_momentum_pre
     # features['bi_momentum_curr'] = bi_momentum_curr
     # features['bi_momentum_decay_ratio'] = bi_momentum_curr / bi_momentum_pre
-    features['bi_volume_decay'] = bi.get_end_klu().volume / bi.get_begin_klu().volume
-    # cur_lv_chan.zs_list[-1].bi_in
+    # features['bi_volume_decay'] = bi.get_end_klu().volume / bi.get_begin_klu().volume
+
+    zs = cur_lv_chan.zs_list[-1]
+    # 中枢上沿
+    zs_upper_edge = zs.high
+    # 中枢下沿
+    zs_lower_edge = zs.low
+    # 中枢高度
+    zs_height = zs_upper_edge - zs_lower_edge
+    # 中枢向下价格系数
+    zs_downward_price_coeff = (zs_lower_edge-last_klu.close) / zs_height
+    zs_downward_price_coeff = max(zs_downward_price_coeff, 0)
+
+    zs_begin_klu_idx = zs.begin_bi.get_begin_klu().idx
+    zs_end_klu_idx = zs.end_bi.get_end_klu().idx
+    zs_avg_atr = dataframe.iloc[zs_begin_klu_idx:zs_end_klu_idx + 1]['atr'].mean()
+    zs_bi_out_avg_atr = dataframe.iloc[zs.bi_out.get_begin_klu().idx:zs.bi_out.get_end_klu().idx + 1]['atr'].mean()
+    # 中枢波动率系数
+    zs_out_atr_ratio = zs_bi_out_avg_atr/zs_avg_atr
+
+    zs_avg_volume = dataframe.iloc[zs_begin_klu_idx:zs_end_klu_idx + 1]['volume'].mean()
+    zs_bi_out_avg_volume = dataframe.iloc[zs.bi_out.get_begin_klu().idx:zs.bi_out.get_end_klu().idx + 1][
+        'volume'].mean()
+    # 中枢量能系数
+    zs_out_volume_ratio = zs_bi_out_avg_volume / zs_avg_volume
+    # 中枢时间系数
+    zs_time_coeff = np.log(zs_end_klu_idx - zs_begin_klu_idx + 1) / 5
+
+    zs_out_score = (0.4 * zs_downward_price_coeff *100 + 0.25*min(zs_out_volume_ratio,3) * 33.3+0.2*min(zs_out_atr_ratio,2)*50 +0.15*zs_time_coeff*100)
+    zs_break_strength = np.clip(zs_out_score,0,100)
+    features['zs_break_strength'] = zs_break_strength
+    features['zs_time_coeff'] = zs_time_coeff
+    features['zs_out_volume_ratio'] = zs_out_volume_ratio
+    features['zs_downward_price_coeff'] = zs_downward_price_coeff
+    features['zs_out_atr_ratio'] = zs_out_atr_ratio
+
+    bi_in_macd_area,bi_out_macd_area,macd_area_ratio = cal_zs_in_out_bi_macd_area(zs,dataframe)
+    # features['bi_in_macd_area'] = bi_in_macd_area
+    # features['bi_out_macd_area'] = bi_out_macd_area
+    features['macd_area_ratio'] = macd_area_ratio
     return features
 
 def stragety_feature(last_klu):
@@ -809,7 +667,7 @@ def write_libsvm(file_name: str, dict: Dict[int, T_SAMPLE_INFO], bsp_academy, fe
             negative += 1
         features = []  # List[(idx, value)]
         for feature_name, value in feature_info['feature'].items():
-            if(feature_name in selected_feature_names):
+            # if(feature_name in selected_feature_names):
                 if feature_name not in feature_meta:
                     cur_feature_idx = feature_idx[-1]
                     feature_meta[feature_name] = cur_feature_idx
@@ -869,7 +727,7 @@ def model_tran(chan: CChan, bsp_dict: Dict[int, T_SAMPLE_INFO], type: BSP_TYPE, 
         fid.write(json.dumps(feature_meta))
 
     # 画图检查label是否正确
-    plot(chan, plot_marker, type, is_buy)
+    # plot(chan, plot_marker, type, is_buy)
     # 注释范围end
 
     X_train, y_train = load_svmlight_file(train_file_name)
@@ -889,18 +747,26 @@ def model_tran(chan: CChan, bsp_dict: Dict[int, T_SAMPLE_INFO], type: BSP_TYPE, 
     dtrain = xgb.DMatrix(train_file_name + "?format=libsvm")  # load sample
     dval = xgb.DMatrix(val_file_name + "?format=libsvm")  # load sample
     dtest = xgb.DMatrix(test_file_name + "?format=libsvm")  # load sample
-    param = {'device': 'cuda', 'tree_method': 'hist', 'eta': 0.3, 'objective': 'binary:logistic','max_depth': 2,
-             'eval_metric': 'auc', 'reg_alpha':0.1,'reg_lambda':1.0}
+    # param = {'device': 'cuda', 'tree_method': 'hist', 'eta': 0.3, 'objective': 'binary:logistic','max_depth': 2,
+    #          'eval_metric': 'auc', 'reg_alpha':0.1,'reg_lambda':1.0}
+    # param = {'colsample_bytree': 0.4329211314861462, 'eta': 0.8442373851277825, 'gamma': 1.4581511825290598, 'learning_rate': 0.2453380070530987, 'max_depth': 3, 'min_child_weight': 5.916319324973441, 'reg_alpha': 0.3244133249128073, 'reg_lambda': 0.7653459681561497, 'scale_pos_weight': 2.868823840171599, 'subsample': 0.662752746276055}
+    param = {'colsample_bytree': 0.44709641545116663, 'eta': 0.5865857591797552, 'gamma': 0.6788492006240149, 'learning_rate': 0.2065119385012147, 'max_depth': 3, 'min_child_weight': 2.1728216647050442, 'reg_alpha': 0.03425693554810483, 'reg_lambda': 0.9484257091230552, 'scale_pos_weight': 4.839524990012526, 'subsample': 0.7029122033057065}
+    param['device'] = 'cuda'
+    param['tree_method'] = 'hist'
+    param['objective'] = 'binary:logistic'
+    param['eval_metric'] = 'auc'
+
     evals_result = {}
+
     bst = xgb.train(
-            param,
-            dtrain=dtrain,
-            num_boost_round=10,
-            evals=[(dtrain, "train"), (dval, 'val')],
-            evals_result=evals_result,
-            verbose_eval=True,
-            early_stopping_rounds=50
-        )
+        param,
+        dtrain,
+        num_boost_round=100,
+        evals=[(dtrain, "train"), (dval, "val")],
+        early_stopping_rounds=50,
+        evals_result=evals_result,
+        verbose_eval=True
+    )
 
     # 绘制学习曲线
     pyplot.figure(figsize=(10, 6))
@@ -936,21 +802,7 @@ def model_tran(chan: CChan, bsp_dict: Dict[int, T_SAMPLE_INFO], type: BSP_TYPE, 
     y_pred_labels = [1 if x > 0.46 else 0 for x in y_pred]
     print("Accuracy:", accuracy_score(y_true, y_pred_labels))
     print("\nClassification Report:\n", classification_report(y_true, y_pred_labels))
-        #
-        # param_grid = {
-        #     'max_depth': [6, 9, 11],
-        #     'subsample': [0.6, 0.8, 1.0]
-        # }
 
-        # best_score = 0
-        # best_params = {}
-        # for depth in param_grid['max_depth']:
-        #     for subsample in param_grid['subsample']:
-        #         params.update({'max_depth': depth, 'subsample': subsample})
-        #         model = xgb.train(params, dtrain, 1000, evals=[(dval, 'val')], early_stopping_rounds=50)
-        #         if model.best_score > best_score:
-        #             best_score = model.best_score
-        #             best_params = params.copy()
 
 if __name__ == "__main__":
         """
@@ -1085,6 +937,7 @@ if __name__ == "__main__":
         for bsp_klu_idx, feature_info in t1_bsp_buy_dict.items():
             if bsp_klu_idx <= seg.get_end_klu().idx:
                 new_t1_bsp_buy_dict[bsp_klu_idx] = feature_info
+        # new_t1_bsp_buy_dict = t1_bsp_buy_dict
 
         model_tran(chan, new_t1_bsp_buy_dict, BSP_TYPE.T1, True, 2.7)
         print("=============T1 buy end ====================")

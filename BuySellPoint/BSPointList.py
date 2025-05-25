@@ -132,6 +132,7 @@ class CBSPointList(Generic[LINE_TYPE, LINE_LIST_TYPE]):
         BSP_CONF = self.config.GetBSConfig(seg.is_down())
         zs_cnt = seg.get_multi_bi_zs_cnt() if BSP_CONF.bsp1_only_multibi_zs else len(seg.zs_lst)
         is_target_bsp = (BSP_CONF.min_zs_cnt <= 0 or zs_cnt >= BSP_CONF.min_zs_cnt)
+        # 段内中枢>0 且 中枢不止一笔 且 ( (中枢有出笔 且中枢出笔 >= 段的最后一笔) 或 (中枢最后一笔 >= 段的最后一笔) ) 且 段的最后一笔 > 中枢开始笔+2
         if len(seg.zs_lst) > 0 and \
            not seg.zs_lst[-1].is_one_bi_zs() and \
            ((seg.zs_lst[-1].bi_out and seg.zs_lst[-1].bi_out.idx >= seg.end_bi.idx) or seg.zs_lst[-1].bi_lst[-1].idx >= seg.end_bi.idx) \

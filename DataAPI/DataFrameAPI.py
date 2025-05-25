@@ -10,6 +10,8 @@ import pandas as pd
 from pandas import DataFrame
 import talib.abstract as ta
 from technical import qtpylib
+import numpy as np
+
 
 def GetColumnNameFromFieldList(fileds: str):
     _dict = {
@@ -18,7 +20,7 @@ def GetColumnNameFromFieldList(fileds: str):
         "high": DATA_FIELD.FIELD_HIGH,
         "low": DATA_FIELD.FIELD_LOW,
         "close": DATA_FIELD.FIELD_CLOSE,
-         "volume": DATA_FIELD.FIELD_VOLUME,
+        "volume": DATA_FIELD.FIELD_VOLUME,
     }
     return [_dict[x] for x in fileds.split(",")]
 
@@ -26,92 +28,151 @@ def GetColumnNameFromFieldList(fileds: str):
 class DataFrameAPI(CCommonStockApi):
     is_connect = None
     dataframe = None
+
     def __init__(self, code, k_type=KL_TYPE.K_DAY, begin_date=None, end_date=None, autype=AUTYPE.QFQ):
         super(DataFrameAPI, self).__init__(code, k_type, begin_date, end_date, autype)
         self.load_by_file()
 
+    def cal_sar_slope(self, df: DataFrame):
+        # 预分配结果列，避免 df.loc 逐行赋值
+        df['sar_slope_up'] = 0.0
+        df['sar_slope_down'] = 0.0
+
+        # 计算连续趋势的数量（连续相同值的长度）
+        trend = df['sar_dir'].values
+        trend_len = len(trend)
+        consecutive_counts = np.zeros(trend_len, dtype=int)
+
+        count = 0
+        for i in range(1, trend_len):
+            if trend[i] == trend[i - 1]:
+                count += 1
+            else:
+                count = 1
+            consecutive_counts[i] = count
+
+        # 根据趋势计算 sar_slope_up 或 sar_slope_down
+        sar = df['sar'].values
+
+        for i in range(1,len(df)):
+            cnt = consecutive_counts[i]
+            if trend[i] == 0:
+                # 下跌趋势
+                if i == 0 or cnt <= 1:
+                    continue
+                elif cnt > 5 and i >= 4:
+                    df.at[i, 'sar_slope_down'] = ta.LINEARREG_SLOPE(sar[i - 4:i + 1], timeperiod=5)[-1]
+                else:
+                    start = i + 1 - cnt
+                    if start >= 0:
+                        df.at[i, 'sar_slope_down'] = ta.LINEARREG_SLOPE(sar[start:i + 1], timeperiod=int(cnt))[-1]
+            else:
+                # 上涨趋势
+                if i == 0 or cnt <= 1:
+                    continue
+                elif cnt > 5 and i >= 4:
+                    df.at[i, 'sar_slope_up'] = ta.LINEARREG_SLOPE(sar[i - 4:i + 1], timeperiod=5)[-1]
+                else:
+                    start = i + 1 - cnt
+                    if start >= 0:
+                        df.at[i, 'sar_slope_up'] = ta.LINEARREG_SLOPE(sar[start:i + 1], timeperiod=int(cnt))[-1]
+
     def load_by_file(self):
         df = pd.read_feather(r'E:\freqtrade\data\data\binance\futures\BTC_USDT_USDT-15m-futures.feather')  # 读取完整数据
 
+        df['close_slope_5'] = ta.LINEARREG_SLOPE(df['close'], timeperiod=5)
+        df['close_slope_14'] = ta.LINEARREG_SLOPE(df['close'], timeperiod=14)
+        df['close_pct_5'] = df['close'].pct_change(periods=5)
+        df['close_mom_10'] = ta.MOM(df['close'], 10)
+        # 趋势类
+        df['volume_slope_14'] = ta.LINEARREG_SLOPE(df['volume'], 14)
+        df['vol_close_slope_div'] = df['volume_slope_14'] * df['close_slope_14']
+
+        # 高频变化类
+        df['volume_pct_5'] = df['volume'].pct_change(periods=5)
+        df['vol_close_pct_div'] = df['close_pct_5'] * df['volume_pct_5']
+
+        # 动量类
+
+        volume_mom = ta.MOM(df['volume'], 10)
+        df['volume_mom_10'] = ta.MOM(df['volume'], 10)
+        df['vol_close_mom_div'] = df['volume_mom_10'] * df['close_mom_10']
         ### 动量指标 Momentum Indicators ###
-        df ['adx'] = ta.ADX(df)
-        df ['adxr'] = ta.ADXR(df)
-        df ['apo'] = ta.APO(df)
+        df['adx'] = ta.ADX(df)
+        df['adxr'] = ta.ADXR(df)
+        df['apo'] = ta.APO(df)
         # aroon
         aroon = ta.AROON(df)
-        df ['aroondown'] = aroon['aroondown']
-        df ['aroonup'] = aroon['aroonup']
+        df['aroondown'] = aroon['aroondown']
+        df['aroonup'] = aroon['aroonup']
 
-        df ['aroonosc'] = ta.AROONOSC(df)
-        df ['bop'] = ta.BOP(df)
-        df ['cci'] = ta.CCI(df)
-        df ['cmo'] = ta.CMO(df)
-        df ['dx'] = ta.DX(df)
+        df['aroonosc'] = ta.AROONOSC(df)
+        df['bop'] = ta.BOP(df)
+        df['cci'] = ta.CCI(df)
+        df['cmo'] = ta.CMO(df)
+        df['dx'] = ta.DX(df)
 
         # macd
         macd = ta.MACD(df)
-        df ['macd'] = macd['macd']
-        df ['macdsignal'] = macd['macdsignal']
-        df ['macdhist'] = macd['macdhist']
-        # macdext
-        macdext = ta.MACDEXT(df)
-        df ['macdext_macd'] = macdext['macd']
-        df ['macdext_macdsignal'] = macdext['macdsignal']
-        df ['macdext_macdhist'] = macdext['macdhist']
-        # macdfix
-        macdfix = ta.MACDFIX(df)
-        df ['macdfix_macd'] = macdfix['macd']
-        df ['macdfix_macdsignal'] = macdfix['macdsignal']
-        df ['macdfix_macdhist'] = macdfix['macdhist']
+        df['macd'] = macd['macd']
+        df['macdsignal'] = macd['macdsignal']
+        df['macdhist'] = macd['macdhist']
+        df['macd_diff'] = df['macd'] - df['macdsignal']  # 动量差值
+        df['macd_hist_slope'] = ta.LINEARREG_SLOPE(df['macdhist'], timeperiod=5)  # 柱状图斜率
+        df['macd_hist_std'] = df['macdhist'].rolling(window=5).std()
 
-        df ['mfi'] = ta.MFI(df)
-        df ['minus_di'] = ta.MINUS_DI(df)
-        df ['minus_dm'] = ta.MINUS_DM(df)
-        df ['mom'] = ta.MOM(df)
-        df ['plus_di'] = ta.PLUS_DI(df)
-        df ['plus_dm'] = ta.PLUS_DM(df)
-        df ['ppo'] = ta.PPO(df)
-        df ['roc'] = ta.ROC(df)
-        df ['rocp'] = ta.ROCP(df)
-        df ['rocr'] = ta.ROCR(df)
-        df ['rocr100'] = ta.ROCR100(df)
-        df ['rsi'] = ta.RSI(df)
+        df['mfi'] = ta.MFI(df)
+        df['minus_di'] = ta.MINUS_DI(df)
+        df['minus_dm'] = ta.MINUS_DM(df)
+        df['mom'] = ta.MOM(df)
+        df['plus_di'] = ta.PLUS_DI(df)
+        df['plus_dm'] = ta.PLUS_DM(df)
+        df['ppo'] = ta.PPO(df)
+        df['roc'] = ta.ROC(df)
+        df['rocp'] = ta.ROCP(df)
+        df['rocr'] = ta.ROCR(df)
+        df['rocr100'] = ta.ROCR100(df)
+        df['rsi'] = ta.RSI(df)
+        df['rsi_slope_5'] = ta.LINEARREG_SLOPE(df['rsi'], timeperiod=5)
+        df['rsi_slope_14'] = ta.LINEARREG_SLOPE(df['rsi'], timeperiod=14)
+        df['rsi_divergence_5'] = df['rsi_slope_5'] * df['close_slope_5']
+        df['rsi_divergence_14'] = df['rsi_slope_14'] * df['close_slope_14']
 
         # stoch
         stoch = ta.STOCH(df)
-        df ['slowk'] = stoch['slowk']
-        df ['slowd'] = stoch['slowd']
+        df['slowk'] = stoch['slowk']
+        df['slowd'] = stoch['slowd']
 
         # stochf
         stochf = ta.STOCHF(df)
-        df ['stochf_fastk'] = stochf['fastk']
-        df ['stochf_fastd'] = stochf['fastd']
+        df['stochf_fastk'] = stochf['fastk']
+        df['stochf_fastd'] = stochf['fastd']
 
         # stochrsi
         stochrsi = ta.STOCHRSI(df)
-        df ['stochrsi_fastk'] = stochrsi['fastk']
-        df ['stochrsi_fastd'] = stochrsi['fastd']
+        df['stochrsi_fastk'] = stochrsi['fastk']
+        df['stochrsi_fastd'] = stochrsi['fastd']
 
-        df ['trix'] = ta.TRIX(df)
-        df ['ultosc'] = ta.ULTOSC(df)
-        df ['willr'] = ta.WILLR(df)
+        df['trix'] = ta.TRIX(df)
+        df['ultosc'] = ta.ULTOSC(df)
+        df['willr'] = ta.WILLR(df)
 
         ### 交易量指示器 Volume Indicators ###
-        df ['ad'] = ta.AD(df)
-        df ['adosc'] = ta.ADOSC(df)
-        df ['obv'] = ta.OBV(df)
+        df['ad'] = ta.AD(df)
+        df['adosc'] = ta.ADOSC(df)
+        df['obv'] = ta.OBV(df)
 
         ### 周期指标 Cycle Indicators ###
-        df ['ht_dcperiod'] = ta.HT_DCPERIOD(df)
-        df ['ht_dcphase'] = ta.HT_DCPHASE(df)
+        df['ht_dcperiod'] = ta.HT_DCPERIOD(df)
+        df['ht_dcphase'] = ta.HT_DCPHASE(df)
         # ht_phasor
         ht_phasor = ta.HT_PHASOR(df)
-        df ['inphase'] = ht_phasor['inphase']
-        df ['quadrature'] = ht_phasor['quadrature']
+        df['inphase'] = ht_phasor['inphase']
+        df['quadrature'] = ht_phasor['quadrature']
         # ht_phasor
         ht_sine = ta.HT_SINE(df)
-        df ['sine'] = ht_sine['sine']
-        df ['leadsine'] = ht_sine['leadsine']
+        df['sine'] = ht_sine['sine']
+        df['leadsine'] = ht_sine['leadsine']
 
         df['ht_trendmode'] = ta.HT_TRENDMODE(df)
 
@@ -201,28 +262,21 @@ class DataFrameAPI(CCommonStockApi):
 
         ### 重叠研究 Overlap Studies ###
         # 布林线
-        bollinger = ta.BBANDS(df)
-        df['bb_lowerband'] = bollinger['lowerband']
-        df['bb_upperband'] = bollinger['upperband']
-        df['bb_middleband'] = bollinger['middleband']
-        df['bb_close_lowerband_ratio'] = df['close'] / bollinger['lowerband']
-        df['bb_close_upperband_ratio'] = df['close'] / bollinger['upperband']
-        df['bb_close_middleband_ratio'] = df['close'] / bollinger['middleband']
-        df['bb_upperband_lowerband_ratio'] = bollinger['upperband'] / bollinger['lowerband']
-        df['bb_upperband_middleband_ratio'] = bollinger['upperband'] / bollinger['middleband']
-        df['bb_middleband_lowerband_ratio'] = bollinger['middleband'] / bollinger['lowerband']
+        upper, middle, lower = ta.BBANDS(df['close'], timeperiod=20, nbdevup=2.0, nbdevdn=2.0, matype=0)
+        df['bb_lowerband'] = lower
+        df['bb_upperband'] = upper
+        df['bb_middleband'] = middle
+        df['bb_pct'] = (df['close'] - df['bb_lowerband']) / (df['bb_upperband'] - df['bb_lowerband'])
+        df['bb_diff_std'] = (df['close'] - df['bb_middleband']) / (df['bb_upperband'] - df['bb_lowerband'])
+        df['bb_width_pct'] = (df['bb_upperband'] - df['bb_lowerband']) / df['bb_middleband']
+        df['bb_break_upper'] = (df['close'] > df['bb_upperband']).astype(int)
+        df['bb_break_lower'] = (df['close'] < df['bb_lowerband']).astype(int)
         df['bb_lowerband_slope_5'] = ta.LINEARREG_SLOPE(df['bb_lowerband'], timeperiod=5)
         df['bb_upperband_slope_5'] = ta.LINEARREG_SLOPE(df['bb_upperband'], timeperiod=5)
         df['bb_middleband_slope_5'] = ta.LINEARREG_SLOPE(df['bb_middleband'], timeperiod=5)
         df['bb_upperband_lowerband_slope_diff_5'] = df['bb_upperband_slope_5'] - df['bb_lowerband_slope_5']
         df['bb_upperband_middleband_slope_diff_5'] = df['bb_upperband_slope_5'] - df['bb_middleband_slope_5']
         df['bb_middleband_lowerband_slope_diff_5'] = df['bb_middleband_slope_5'] - df['bb_lowerband_slope_5']
-        df['bb_lowerband_slope_20'] = ta.LINEARREG_SLOPE(df['bb_lowerband'], timeperiod=20)
-        df['bb_upperband_slope_20'] = ta.LINEARREG_SLOPE(df['bb_upperband'], timeperiod=20)
-        df['bb_middleband_slope_20'] = ta.LINEARREG_SLOPE(df['bb_middleband'], timeperiod=20)
-        df['bb_upperband_lowerband_slope_diff_20'] = df['bb_upperband_slope_20'] - df['bb_lowerband_slope_20']
-        df['bb_upperband_middleband_slope_diff_20'] = df['bb_upperband_slope_20'] - df['bb_middleband_slope_20']
-        df['bb_middleband_lowerband_slope_diff_20'] = df['bb_middleband_slope_20'] - df['bb_lowerband_slope_20']
 
         # dema
         df['dema'] = ta.DEMA(df)
@@ -244,6 +298,15 @@ class DataFrameAPI(CCommonStockApi):
         df['close_ema_99_ratio'] = df['close'] / df['ema_99']
         df['ema_7_99_ratio'] = df['ema_7'] / df['ema_99']
         df['ema_25_99_ratio'] = df['ema_25'] / df['ema_99']
+        df['close_vs_ema7'] = (df['close'] - df['ema_7']) / df['ema_7']
+        df['close_vs_ema25'] = (df['close'] - df['ema_25']) / df['ema_25']
+        df['close_vs_ema99'] = (df['close'] - df['ema_99']) / df['ema_99']
+        df['ema7_vs_ema25'] = (df['ema_7'] - df['ema_25']) / df['ema_25']
+        df['ema25_vs_ema99'] = (df['ema_25'] - df['ema_99']) / df['ema_99']
+        df['ema7_vs_ema99'] = (df['ema_7'] - df['ema_99']) / df['ema_99']
+        df['slope_ema7'] = ta.LINEARREG_SLOPE(df['ema_7'], timeperiod=5)
+        df['slope_ema25'] = ta.LINEARREG_SLOPE(df['ema_25'], timeperiod=5)
+        df['slope_ema99'] = ta.LINEARREG_SLOPE(df['ema_99'], timeperiod=5)
 
         # ht_trendline
         df['ht_trendline'] = ta.HT_TRENDLINE(df)
@@ -265,6 +328,16 @@ class DataFrameAPI(CCommonStockApi):
         df['close_kama_99_ratio'] = df['close'] / df['kama_99']
         df['kama_7_99_ratio'] = df['kama_7'] / df['kama_99']
         df['kama_25_99_ratio'] = df['kama_25'] / df['kama_99']
+        df['close_vs_kama7'] = (df['close'] - df['kama_7']) / df['kama_7']
+        df['close_vs_kama25'] = (df['close'] - df['kama_25']) / df['kama_25']
+        df['close_vs_kama99'] = (df['close'] - df['kama_99']) / df['kama_99']
+        df['kama7_vs_kama25'] = (df['kama_7'] - df['kama_25']) / df['kama_25']
+        df['kama25_vs_kama99'] = (df['kama_25'] - df['kama_99']) / df['kama_99']
+        df['kama7_vs_kama99'] = (df['kama_7'] - df['kama_99']) / df['kama_99']
+        df['slope_kama7'] = ta.LINEARREG_SLOPE(df['kama_7'], timeperiod=5)
+        df['slope_kama25'] = ta.LINEARREG_SLOPE(df['kama_25'], timeperiod=5)
+        df['slope_kama99'] = ta.LINEARREG_SLOPE(df['kama_99'], timeperiod=5)
+
 
         # ma
         df['ma_7'] = ta.MA(df, timeperiod=7)
@@ -284,7 +357,16 @@ class DataFrameAPI(CCommonStockApi):
         df['close_ma_99_ratio'] = df['close'] / df['ma_99']
         df['ma_7_99_ratio'] = df['ma_7'] / df['ma_99']
         df['ma_25_99_ratio'] = df['ma_25'] / df['ma_99']
-        # mama
+        df['close_vs_ma7'] = (df['close'] - df['ma_7']) / df['ma_7']
+        df['close_vs_ma25'] = (df['close'] - df['ma_25']) / df['ma_25']
+        df['close_vs_ma99'] = (df['close'] - df['ma_99']) / df['ma_99']
+        df['ma7_vs_ma25'] = (df['ma_7'] - df['ma_25']) / df['ma_25']
+        df['ma25_vs_ma99'] = (df['ma_25'] - df['ma_99']) / df['ma_99']
+        df['ma7_vs_ma99'] = (df['ma_7'] - df['ma_99']) / df['ma_99']
+        df['slope_ma7'] = ta.LINEARREG_SLOPE(df['ma_7'], timeperiod=5)
+        df['slope_ma25'] = ta.LINEARREG_SLOPE(df['ma_25'], timeperiod=5)
+        df['slope_ma99'] = ta.LINEARREG_SLOPE(df['ma_99'], timeperiod=5)
+         # mama
         mama, fama = ta.MAMA(df['close'].values)
         df['mama'] = mama
         df['fama'] = fama
@@ -296,6 +378,10 @@ class DataFrameAPI(CCommonStockApi):
         df['sar'] = ta.SAR(df)
         df['close_sar_diff'] = df['close'] - df['sar']
         df['close_sar_ratio'] = df['close'] / df['sar']
+        df['sar_distance'] = (df['close'] - df['sar']) / df['close']
+        df['sar_dir'] = (df['close'] > df['sar']).astype(int)
+        df['sar_reversal'] = df['sar_dir'].diff().fillna(0).abs()
+        self.cal_sar_slope(df)
         # sarext
         df['sarext'] = ta.SAREXT(df)
         df['close_sarext_diff'] = df['close'] - df['sarext']
@@ -318,6 +404,16 @@ class DataFrameAPI(CCommonStockApi):
         df['close_sma_99_ratio'] = df['close'] / df['sma_99']
         df['sma_7_99_ratio'] = df['sma_7'] / df['sma_99']
         df['sma_25_99_ratio'] = df['sma_25'] / df['sma_99']
+        df['close_vs_sma7'] = (df['close'] - df['sma_7']) / df['sma_7']
+        df['close_vs_sma25'] = (df['close'] - df['sma_25']) / df['sma_25']
+        df['close_vs_sma99'] = (df['close'] - df['sma_99']) / df['sma_99']
+        df['sma7_vs_sma25'] = (df['sma_7'] - df['sma_25']) / df['sma_25']
+        df['sma25_vs_sma99'] = (df['sma_25'] - df['sma_99']) / df['sma_99']
+        df['sma7_vs_sma99'] = (df['sma_7'] - df['sma_99']) / df['sma_99']
+        df['slope_sma7'] = ta.LINEARREG_SLOPE(df['sma_7'], timeperiod=5)
+        df['slope_sma25'] = ta.LINEARREG_SLOPE(df['sma_25'], timeperiod=5)
+        df['slope_sma99'] = ta.LINEARREG_SLOPE(df['sma_99'], timeperiod=5)
+
         # tema
         df['tema_7'] = ta.TEMA(df, timeperiod=7)
         df['close_tema_7_diff'] = df['close'] - df['tema_7']
@@ -336,6 +432,15 @@ class DataFrameAPI(CCommonStockApi):
         df['close_tema_99_ratio'] = df['close'] / df['tema_99']
         df['tema_7_99_ratio'] = df['tema_7'] / df['tema_99']
         df['tema_25_99_ratio'] = df['tema_25'] / df['tema_99']
+        df['close_vs_tema7'] = (df['close'] - df['tema_7']) / df['tema_7']
+        df['close_vs_tema25'] = (df['close'] - df['tema_25']) / df['tema_25']
+        df['close_vs_tema99'] = (df['close'] - df['tema_99']) / df['tema_99']
+        df['tema7_vs_tema25'] = (df['tema_7'] - df['tema_25']) / df['tema_25']
+        df['tema25_vs_tema99'] = (df['tema_25'] - df['tema_99']) / df['tema_99']
+        df['tema7_vs_tema99'] = (df['tema_7'] - df['tema_99']) / df['tema_99']
+        df['slope_tema7'] = ta.LINEARREG_SLOPE(df['tema_7'], timeperiod=5)
+        df['slope_tema25'] = ta.LINEARREG_SLOPE(df['tema_25'], timeperiod=5)
+        df['slope_tema99'] = ta.LINEARREG_SLOPE(df['tema_99'], timeperiod=5)
 
         # trima
         df['trima_7'] = ta.TRIMA(df, timeperiod=7)
@@ -355,6 +460,15 @@ class DataFrameAPI(CCommonStockApi):
         df['close_trima_99_ratio'] = df['close'] / df['trima_99']
         df['trima_7_99_ratio'] = df['trima_7'] / df['trima_99']
         df['trima_25_99_ratio'] = df['trima_25'] / df['trima_99']
+        df['close_vs_trima7'] = (df['close'] - df['trima_7']) / df['trima_7']
+        df['close_vs_trima25'] = (df['close'] - df['trima_25']) / df['trima_25']
+        df['close_vs_trima99'] = (df['close'] - df['trima_99']) / df['trima_99']
+        df['trima7_vs_trima25'] = (df['trima_7'] - df['trima_25']) / df['trima_25']
+        df['trima25_vs_trima99'] = (df['trima_25'] - df['trima_99']) / df['trima_99']
+        df['trima7_vs_trima99'] = (df['trima_7'] - df['trima_99']) / df['trima_99']
+        df['slope_trima7'] = ta.LINEARREG_SLOPE(df['trima_7'], timeperiod=5)
+        df['slope_trima25'] = ta.LINEARREG_SLOPE(df['trima_25'], timeperiod=5)
+        df['slope_trima99'] = ta.LINEARREG_SLOPE(df['trima_99'], timeperiod=5)
 
         # wma
         df['wma_7'] = ta.WMA(df, timeperiod=7)
@@ -374,6 +488,16 @@ class DataFrameAPI(CCommonStockApi):
         df['close_wma_99_ratio'] = df['close'] / df['wma_99']
         df['wma_7_99_ratio'] = df['wma_7'] / df['wma_99']
         df['wma_25_99_ratio'] = df['wma_25'] / df['wma_99']
+        df['close_vs_wma7'] = (df['close'] - df['wma_7']) / df['wma_7']
+        df['close_vs_wma25'] = (df['close'] - df['wma_25']) / df['wma_25']
+        df['close_vs_wma99'] = (df['close'] - df['wma_99']) / df['wma_99']
+        df['wma7_vs_wma25'] = (df['wma_7'] - df['wma_25']) / df['wma_25']
+        df['wma25_vs_wma99'] = (df['wma_25'] - df['wma_99']) / df['wma_99']
+        df['wma7_vs_wma99'] = (df['wma_7'] - df['wma_99']) / df['wma_99']
+        df['slope_wma7'] = ta.LINEARREG_SLOPE(df['wma_7'], timeperiod=5)
+        df['slope_wma25'] = ta.LINEARREG_SLOPE(df['wma_25'], timeperiod=5)
+        df['slope_wma99'] = ta.LINEARREG_SLOPE(df['wma_99'], timeperiod=5)
+
 
         df['slope'] = ta.LINEARREG_SLOPE(df['close'].values, timeperiod=5)
 
@@ -381,8 +505,7 @@ class DataFrameAPI(CCommonStockApi):
 
         last_na_all = stacked[stacked.isna()].index[-1]
         print(f"全局最后一个NaN的索引：{last_na_all}")
-        self.dataframe = df.iloc[last_na_all[0]+1:].reset_index(drop=True)
-
+        self.dataframe = df.iloc[last_na_all[0] + 1:].reset_index(drop=True)
 
     def get_df(self):
         return self.dataframe
@@ -403,7 +526,7 @@ class DataFrameAPI(CCommonStockApi):
             ]
             yield CKLine_Unit(self.create_item_dict(item_data, GetColumnNameFromFieldList(fields)), autofix=True)
 
-    def get_kl_data_by_df(self,df:DataFrame):
+    def get_kl_data_by_df(self, df: DataFrame):
         fields = "time,open,high,low,close,volume"
         timeframe = self.__convert_type()
 
