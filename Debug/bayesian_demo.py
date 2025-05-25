@@ -26,17 +26,29 @@ def xgb_evaluate(max_depth,eta, gamma, colsample_bytree, learning_rate, min_chil
         "reg_alpha": reg_alpha,
         "verbosity": 0
     }
-    model = xgb.train(
+    # model = xgb.train(
+    #     params,
+    #     dtrain,
+    #     num_boost_round=100,
+    #     evals=[(dtrain, "train"), (dval, "eval")],
+    #     early_stopping_rounds=50,
+    #     verbose_eval=False
+    # )
+    # preds = model.predict(dval)
+    # auc = roc_auc_score(dval.get_label(), preds)
+    # return auc
+    cv_result = xgb.cv(
         params,
         dtrain,
         num_boost_round=100,
-        evals=[(dtrain, "train"), (dval, "eval")],
+        nfold=10,
+        stratified=True,
         early_stopping_rounds=50,
+        seed=42,
         verbose_eval=False
     )
-    preds = model.predict(dval)
-    auc = roc_auc_score(dval.get_label(), preds)
-    return auc
+    return cv_result["test-auc-mean"].max()
+
 
 # 设置超参数空间
 param_bounds = {
@@ -66,4 +78,24 @@ optimizer.maximize(
 )
 
 # 输出最优结果
-print("Best result:", optimizer.max)
+# print("Best result:", optimizer.max)
+
+# 获取最优超参数
+best_params = optimizer.max['params']
+best_params['max_depth'] = int(best_params['max_depth'])
+best_params['min_child_weight'] = int(best_params['min_child_weight'])
+
+# 👇 获取最佳轮数（用 xgb.cv 再跑一次，为了拿到 best_iteration）
+cv_result = xgb.cv(
+    best_params,
+    dtrain,
+    num_boost_round=200,
+    nfold=5,
+    stratified=True,
+    early_stopping_rounds=50,
+    seed=42,
+    verbose_eval=False
+)
+best_num_round = cv_result.shape[0]  # 最优轮数 = best_iteration
+print("Best params: ", optimizer.max)
+print("Best num_round: ", best_num_round)

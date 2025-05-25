@@ -58,12 +58,13 @@ if __name__ == "__main__":
     parshap_train = partial_correlation(shap_train_df, y_train)
     parshap_val = partial_correlation(shap_val_df, y_val)
     parshap_test = partial_correlation(shap_test_df, y_test)
-    parshap_diff = pd.Series(parshap_test - parshap_train, name='parshap_diff')
+    parshap_diff = pd.Series(parshap_val - parshap_train, name='parshap_diff')
     print('\n################# Print val parshap_diff')  # 打印parshap差异
     # parshap_diff.sort_values() [k for k, v in meta.items() if v not in features_index]
     print(parshap_diff.dropna().sort_values())
 
     print('\n################# Print test parshap_diff')  # 打印parshap差异
+    parshap_diff = pd.Series(parshap_test - parshap_train, name='parshap_diff')
     # parshap_diff.sort_values() [k for k, v in meta.items() if v not in features_index]
     print(parshap_diff.dropna().sort_values())
 

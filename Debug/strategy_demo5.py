@@ -391,6 +391,9 @@ def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
         "cmo": dataframe['cmo'][index],
         "dx": dataframe['dx'][index],
 
+        "macd_hist_std": dataframe['macd_hist_std'][index],
+        "macd_hist_slope": dataframe['macd_hist_slope'][index],
+        # "macd_diff": dataframe['macd_diff'][index],
         "mom": dataframe['mom'][index],
         "plus_di": dataframe['plus_di'][index],
         "plus_dm": dataframe['plus_dm'][index],
@@ -409,7 +412,7 @@ def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
         # "obv": dataframe['obv'][index],
 
         ### 周期指标 Cycle Indicators ###
-        "ht_dcperiod": dataframe['ht_dcperiod'][index],
+        # "ht_dcperiod": dataframe['ht_dcperiod'][index],
         "ht_dcphase": dataframe['ht_dcphase'][index],
 
         # ht_phasor
@@ -436,45 +439,47 @@ def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
         "bb_middleband_lowerband_slope_diff_5": dataframe['bb_middleband_lowerband_slope_diff_5'][index],
 
         # dema
-        "dema": dataframe['dema'][index],
-        # ema
-        # "ema_7": dataframe['ema_7'][index],
-        # "close_ema_7_ratio": dataframe['close_ema_7_ratio'][index],
-        #
-        # "ema_25": dataframe['ema_25'][index],
-        # "close_ema_25_ratio": dataframe['close_ema_25_ratio'][index],
-        # "ema_7_25_ratio": dataframe['ema_7_25_ratio'][index],
-        #
-        # "ema_99": dataframe['ema_99'][index],
-        #
-        # "close_ema_99_ratio": dataframe['close_ema_99_ratio'][index],
-        # "ema_7_99_ratio": dataframe['ema_7_99_ratio'][index],
-        # "ema_25_99_ratio": dataframe['ema_25_99_ratio'][index],
+        # "dema": dataframe['dema'][index],
+        # 均线
+        "close_vs_ema7": dataframe['close_vs_ema7'][index],
+        "close_vs_ema25": dataframe['close_vs_ema25'][index],
+        "ema7_vs_ema25": dataframe['ema7_vs_ema25'][index],
+        "slope_ema7": dataframe['slope_ema7'][index],
+        "slope_ema25": dataframe['slope_ema25'][index],
+        "close_vs_sma25": dataframe['close_vs_sma25'][index],
+        "close_vs_sma99": dataframe['close_vs_sma99'][index],
+        "sma25_vs_sma99": dataframe['sma25_vs_sma99'][index],
+        "slope_sma25": dataframe['slope_sma25'][index],
+        "slope_sma99": dataframe['slope_sma99'][index],
+        "close_vs_kama25": dataframe['close_vs_kama25'][index],
+        "slope_kama25": dataframe['slope_kama25'][index],
+        "close_vs_tema7": dataframe['close_vs_tema7'][index],
+        "slope_tema7": dataframe['slope_tema7'][index],
 
         # ht_trendline
-        "ht_trendline": dataframe['ht_trendline'][index],
+        # "ht_trendline": dataframe['ht_trendline'][index],
         # kama 考夫曼均线
-        "kama_7": dataframe['kama_7'][index],
+        # "kama_7": dataframe['kama_7'][index],
         "close_kama_7_ratio": dataframe['close_kama_7_ratio'][index],
 
-        "kama_25": dataframe['kama_25'][index],
+        # "kama_25": dataframe['kama_25'][index],
         "close_kama_25_ratio": dataframe['close_kama_25_ratio'][index],
         "kama_7_25_ratio": dataframe['kama_7_25_ratio'][index],
 
-        "kama_99": dataframe['kama_99'][index],
+        # "kama_99": dataframe['kama_99'][index],
         "close_kama_99_ratio": dataframe['close_kama_99_ratio'][index],
         "kama_7_99_ratio": dataframe['kama_7_99_ratio'][index],
         "kama_25_99_ratio": dataframe['kama_25_99_ratio'][index],
 
         # ma       ,
-        "ma_7": dataframe['ma_7'][index],
+        # "ma_7": dataframe['ma_7'][index],
         "close_ma_7_ratio": dataframe['close_ma_7_ratio'][index],
 
-        "ma_25": dataframe['ma_25'][index],
+        # "ma_25": dataframe['ma_25'][index],
         "close_ma_25_ratio": dataframe['close_ma_25_ratio'][index],
         "ma_7_25_ratio": dataframe['ma_7_25_ratio'][index],
 
-        "ma_99": dataframe['ma_99'][index],
+        # "ma_99": dataframe['ma_99'][index],
         "close_ma_99_ratio": dataframe['close_ma_99_ratio'][index],
         "ma_7_99_ratio": dataframe['ma_7_99_ratio'][index],
         "ma_25_99_ratio": dataframe['ma_25_99_ratio'][index],
@@ -486,20 +491,22 @@ def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
         # midprice
         "midprice": dataframe['midprice'][index],
         # sar
-        "sar": dataframe['sar'][index],
-        "close_sar_ratio": dataframe['close_sar_ratio'][index],
+        # "sar": dataframe['sar'][index],
+        # "close_sar_ratio": dataframe['close_sar_ratio'][index],
+        "sar_distance": dataframe['sar_distance'][index],
+        "sar_slope_down": dataframe['sar_slope_down'][index],
         # sarext
         # "sarext": dataframe['sarext'][index],
         # "close_sarext_ratio": dataframe['close_sarext_ratio'][index],
         # sma
-        "sma_7": dataframe['sma_7'][index],
+        # "sma_7": dataframe['sma_7'][index],
         "close_sma_7_ratio": dataframe['close_sma_7_ratio'][index],
 
-        "sma_25": dataframe['sma_25'][index],
+        # "sma_25": dataframe['sma_25'][index],
         "close_sma_25_ratio": dataframe['close_sma_25_ratio'][index],
         "sma_7_25_ratio": dataframe['sma_7_25_ratio'][index],
 
-        "sma_99": dataframe['sma_99'][index],
+        # "sma_99": dataframe['sma_99'][index],
         "close_sma_99_ratio": dataframe['close_sma_99_ratio'][index],
         "sma_7_99_ratio": dataframe['sma_7_99_ratio'][index],
         "sma_25_99_ratio": dataframe['sma_25_99_ratio'][index],
@@ -683,6 +690,53 @@ def write_libsvm(file_name: str, dict: Dict[int, T_SAMPLE_INFO], bsp_academy, fe
     fid.close()
     print(file_name, "正样本", positive, "负样本", negative)
 
+def save_libsvm_file(file_name: str, dict: Dict[int, T_SAMPLE_INFO], bsp_academy,):
+    buy_flag = None
+    if is_buy:
+        buy_flag = 'buy'
+    else:
+        buy_flag = 'sell'
+    prifix = type.name + "_" + buy_flag + "_"
+    # 生成libsvm样本特征
+    bsp_academy = [bsp.klu.idx for bsp in chan.get_bsp()]
+    bsp_feature = []
+    bsp_label = []
+    for bsp_klu_idx, feature_info in bsp_dict.items():
+        label = int(bsp_klu_idx in bsp_academy)
+        feature_item = {}
+        for feature_name, value in feature_info['feature'].items():
+            feature_item[feature_name] = value
+        bsp_feature.append(feature_item)
+        bsp_label.append(label)
+    bsp_df = pd.DataFrame(bsp_feature)
+    bsp_y = pd.Series(bsp_label, name='target')
+    selected = select_features(bsp_df, bsp_y)
+    selected_feature_names = selected.columns.tolist()
+    for name in selected_feature_names:
+        print(name)
+    feature_meta = {}  # 特征meta
+    feature_idx = [0]
+    plot_marker = {}
+    train_file_name = prifix + "train.libsvm"
+    val_file_name = prifix + "val.libsvm"
+    test_file_name = prifix + "test.libsvm"
+    #
+
+    # 注释范围start
+    train_dict, val_dict, test_dict = split_three_phases(bsp_dict)
+    write_libsvm(train_file_name, train_dict, bsp_academy, feature_meta, feature_idx, plot_marker,
+                 selected_feature_names)
+    write_libsvm(val_file_name, val_dict, bsp_academy, feature_meta, feature_idx, plot_marker, selected_feature_names)
+    write_libsvm(test_file_name, test_dict, bsp_academy, feature_meta, feature_idx, plot_marker, selected_feature_names)
+
+    with open(prifix + "feature.meta", "w") as fid:
+        # meta保存下来，实盘预测时特征对齐用
+        fid.write(json.dumps(feature_meta))
+
+    # 画图检查label是否正确
+    # plot(chan, plot_marker, type, is_buy)
+    # 注释范围end
+
 def model_tran(chan: CChan, bsp_dict: Dict[int, T_SAMPLE_INFO], type: BSP_TYPE, is_buy: bool, scale_pos_weight):
     buy_flag = None
     if is_buy:
@@ -730,78 +784,7 @@ def model_tran(chan: CChan, bsp_dict: Dict[int, T_SAMPLE_INFO], type: BSP_TYPE, 
     # plot(chan, plot_marker, type, is_buy)
     # 注释范围end
 
-    X_train, y_train = load_svmlight_file(train_file_name)
-    X_val, y_val = load_svmlight_file(val_file_name)
-    X_test, y_test = load_svmlight_file(train_file_name)
-    X_train = X_train.toarray()
-    smote = SMOTE(random_state=42)  # 不要100%平衡
-    enn = EditedNearestNeighbours(n_neighbors=3)
-    smote_enn = SMOTEENN(smote=smote, enn=enn)
-    smote_tomek = SMOTETomek(random_state=42)
 
-    X_resampled, y_resampled = smote_enn.fit_resample(X_train, y_train)
-    dump_svmlight_file(X_resampled, y_resampled, prifix+"somteenn_train.libsvm")
-
-    # load sample file & train model
-    # dtrain = xgb.DMatrix(prifix+"somteenn_train.libsvm" + "?format=libsvm")  # load sample
-    dtrain = xgb.DMatrix(train_file_name + "?format=libsvm")  # load sample
-    dval = xgb.DMatrix(val_file_name + "?format=libsvm")  # load sample
-    dtest = xgb.DMatrix(test_file_name + "?format=libsvm")  # load sample
-    # param = {'device': 'cuda', 'tree_method': 'hist', 'eta': 0.3, 'objective': 'binary:logistic','max_depth': 2,
-    #          'eval_metric': 'auc', 'reg_alpha':0.1,'reg_lambda':1.0}
-    # param = {'colsample_bytree': 0.4329211314861462, 'eta': 0.8442373851277825, 'gamma': 1.4581511825290598, 'learning_rate': 0.2453380070530987, 'max_depth': 3, 'min_child_weight': 5.916319324973441, 'reg_alpha': 0.3244133249128073, 'reg_lambda': 0.7653459681561497, 'scale_pos_weight': 2.868823840171599, 'subsample': 0.662752746276055}
-    param = {'colsample_bytree': 0.44709641545116663, 'eta': 0.5865857591797552, 'gamma': 0.6788492006240149, 'learning_rate': 0.2065119385012147, 'max_depth': 3, 'min_child_weight': 2.1728216647050442, 'reg_alpha': 0.03425693554810483, 'reg_lambda': 0.9484257091230552, 'scale_pos_weight': 4.839524990012526, 'subsample': 0.7029122033057065}
-    param['device'] = 'cuda'
-    param['tree_method'] = 'hist'
-    param['objective'] = 'binary:logistic'
-    param['eval_metric'] = 'auc'
-
-    evals_result = {}
-
-    bst = xgb.train(
-        param,
-        dtrain,
-        num_boost_round=100,
-        evals=[(dtrain, "train"), (dval, "val")],
-        early_stopping_rounds=50,
-        evals_result=evals_result,
-        verbose_eval=True
-    )
-
-    # 绘制学习曲线
-    pyplot.figure(figsize=(10, 6))
-    pyplot.plot(evals_result['train']['auc'], label='Train AUC')
-    pyplot.plot(evals_result['val']['auc'], label='Validation AUC')
-    pyplot.xlabel('Boosting Rounds')
-    pyplot.ylabel('AUC')
-    pyplot.title('Training Progress with Early Stopping')
-    pyplot.legend()
-    pyplot.grid(True)
-    pyplot.savefig(prifix + "model.jpg")
-
-    bst.save_model(prifix + "model.json")
-
-    # load model
-    model = xgb.Booster()
-    model.load_model(prifix + "model.json")
-
-    # 测试集评估
-    y_pred = model.predict(dtest, iteration_range=(0, model.best_iteration + 1))
-
-    if hasattr(model, 'best_iteration'):
-        print(f"Best iteration: {model.best_iteration}")
-    else:
-        print("未启用早停法或版本不兼容")
-
-    if hasattr(model, 'best_score'):
-        print(f"Best Validation AUC: {model.best_score:.4f}")
-    else:
-        print("未启用早停法或版本不兼容")
-    y_true = dtest.get_label()
-    print(f"Test AUC: {roc_auc_score(y_true, y_pred):.4f}")
-    y_pred_labels = [1 if x > 0.46 else 0 for x in y_pred]
-    print("Accuracy:", accuracy_score(y_true, y_pred_labels))
-    print("\nClassification Report:\n", classification_report(y_true, y_pred_labels))
 
 
 if __name__ == "__main__":
@@ -885,10 +868,10 @@ if __name__ == "__main__":
                                 feature_dict[feature_name] = value
 
                         klu_idx = last_bsp.klu.idx
-                        print("index", index, 'klu_idx', last_bsp.klu.idx)
-                        result = data_src.get_df().loc[klu_idx - index + klu_idx:index,
-                                 ['high', 'low', 'close', 'volume']]
-                        print(result)
+                        # print("index", index, 'klu_idx', last_bsp.klu.idx)
+                        # result = data_src.get_df().loc[klu_idx - index + klu_idx:index,
+                        #          ['high', 'low', 'close', 'volume']]
+                        # print(result)
                         t1_bsp_feats = t1_buy_stragety_feature(klu, last_bsp, data_src.get_df(), index,
                                                                last_bsp.klu.idx, cur_lv_chan)
                         t1_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(feature_dict)
