@@ -318,9 +318,9 @@ def t1_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
     bi = last_bsp.bi
     pre_bi = last_bsp.bi.pre
     next_bi = last_bsp.bi.next
-    bi_high = (bi._high() - bi._low())
-    bi_high_ratio = bi_high / (bi.get_begin_klu().open)
-    features['bi_high_ratio'] = bi_high_ratio
+    bi_height = (bi._high() - bi._low())
+    bi_height_ratio = bi_height / (bi.get_begin_klu().open)
+    features['bi_height_ratio'] = bi_height_ratio
     features['bi_angle'] = cal_bi_angle(bi.get_begin_klu().close, bi.get_end_klu().close,
                                         bi.get_end_klu().idx - bi.get_begin_klu().idx)
     if pre_bi:
@@ -329,6 +329,8 @@ def t1_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
         pre_bi_angle = cal_bi_angle(pre_bi.get_begin_klu().close, pre_bi.get_end_klu().close,
                                     pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
         features['pre_now_angle_diff'] = features['bi_angle'] - pre_bi_angle
+        # features['pre_now_high_ratio'] = (bi._high() - pre_bi._high()) / bi._high()
+        # features['pre_now_low_ratio'] = (bi._low() - pre_bi._low()) / bi._low()
     # bi_momentum_pre = cal_bi_momentum(pre_bi)
     # bi_momentum_curr = cal_bi_momentum(bi)
     # features['bi_momentum_pre'] = bi_momentum_pre
