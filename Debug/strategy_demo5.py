@@ -610,15 +610,20 @@ def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
     next_bi = last_bsp.bi.next
     features['bi_angle'] = cal_bi_angle(bi.get_begin_klu().close, bi.get_end_klu().close,
                                             bi.get_end_klu().idx - bi.get_begin_klu().idx)
-    bi_high = (bi._high() - bi._low())
-    bi_high_ratio = bi_high / (bi.get_begin_klu().open)
-    features['bi_high_ratio'] = bi_high_ratio
+    bi_height = (bi._high() - bi._low())
+    bi_height_ratio = bi_height / (bi.get_begin_klu().open)
+    features['bi_height_ratio'] = bi_height_ratio
     if pre_bi:
         features['pre_bi_angle'] = cal_bi_angle(pre_bi.get_begin_klu().close, pre_bi.get_end_klu().close,
                                                     pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
         pre_bi_angle = cal_bi_angle(pre_bi.get_begin_klu().close, pre_bi.get_end_klu().close,
                                                     pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
         features['pre_now_angle_diff'] = features['bi_angle'] - pre_bi_angle
+        bi_height = (bi._high() - bi._low())
+        bi_height_ratio = bi_height / (bi.get_begin_klu().open)
+        features['bi_height_ratio'] = bi_height_ratio
+        features['pre_now_high_ratio'] = (bi._high() - pre_bi._high()) / bi._high()
+        features['pre_now_low_ratio'] = (bi._low() - pre_bi._low()) / bi._low()
 
     bi_momentum_pre = cal_bi_momentum(pre_bi)
     bi_momentum_curr = cal_bi_momentum(bi)
@@ -911,8 +916,10 @@ if __name__ == "__main__":
         new_t1_bsp_buy_dict =  copy_dict(t1_bsp_buy_dict, seg)
         print("=============T1 buy start ====================")
         save_libsvm_file(chan, new_t1_bsp_buy_dict, BSP_TYPE.T1, True)
-        t1_buy_xgb_model = XGB_Model("T1_buy_", True)
-        t1_buy_best_params, t1_buy_best_num_round = t1_buy_xgb_model.bayyesian_optimize()
+        t1_buy_xgb_model = XGB_Model("T1_buy_",False,'T1_buy_smote_train.libsvm')
+        # t1_buy_best_params, t1_buy_best_num_round = t1_buy_xgb_model.bayyesian_optimize()
+        t1_buy_best_params = {'colsample_bytree': 0.4993244980737337, 'eta': 0.7093045290075815, 'gamma': 4.438764086333725, 'learning_rate': 0.10228260817983205, 'max_depth': 3.8535004115778904, 'min_child_weight': 5.278468515999386, 'reg_alpha': 1.905179819449736, 'reg_lambda': 3.178221766051079, 'scale_pos_weight': 4.542969346434627, 'subsample': 0.71274896747512}
+        t1_buy_best_num_round = 200
         t1_buy_xgb_model.model_tuning(t1_buy_best_params, t1_buy_best_num_round)
         print("=============T1 buy end ====================")
         print("=============T1 sell start ====================")
