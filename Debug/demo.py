@@ -22,9 +22,9 @@ def partial_correlation(shap_df, y_target):
 if __name__ == "__main__":
     feature_meta = {}
 
-    meta = json.load(open("T1_buy_feature.meta", "r"))
+    meta = json.load(open("T1_sell_feature.meta", "r"))
     model = xgb.XGBClassifier()
-    model.load_model("T1_buy_model.json")
+    model.load_model("T1_sell_model.json")
     # predict
     importances = model.feature_importances_
     # print(importances)
@@ -40,9 +40,9 @@ if __name__ == "__main__":
     importances_keys = [k for k, v in meta.items() if v in features_index]
     print("importances_keys", importances_keys)
 
-    X_train, y_train = load_svmlight_file("T1_buy_train.libsvm")
-    X_val, y_val = load_svmlight_file("T1_buy_val.libsvm")
-    X_test, y_test = load_svmlight_file("T1_buy_test.libsvm")
+    X_train, y_train = load_svmlight_file("T1_sell_train.libsvm")
+    X_val, y_val = load_svmlight_file("T1_sell_val.libsvm")
+    X_test, y_test = load_svmlight_file("T1_sell_test.libsvm")
 
     explainer = shap.TreeExplainer(model)
     shap_train = explainer.shap_values(X_train)
@@ -58,6 +58,12 @@ if __name__ == "__main__":
     parshap_train = partial_correlation(shap_train_df, y_train)
     parshap_val = partial_correlation(shap_val_df, y_val)
     parshap_test = partial_correlation(shap_test_df, y_test)
+    print('\n################# Print tran parshap')
+    print(parshap_train.dropna().sort_values())
+    print('\n################# Print val parshap')
+    print(parshap_val.dropna().sort_values())
+    print('\n################# Print test parshap')
+    print(parshap_test.dropna().sort_values())
     parshap_diff = pd.Series(parshap_val - parshap_train, name='parshap_diff')
     print('\n################# Print val parshap_diff')  # 打印parshap差异
     # parshap_diff.sort_values() [k for k, v in meta.items() if v not in features_index]

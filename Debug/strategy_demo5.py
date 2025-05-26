@@ -26,6 +26,7 @@ from imblearn.over_sampling import SMOTE
 from imblearn.under_sampling import EditedNearestNeighbours
 from tsfresh import extract_features,select_features
 from ZS.ZS import CZS
+from model_tran_demo import XGB_Model
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
 
@@ -163,194 +164,183 @@ def new_stragety_feature(last_klu, dataframe: DataFrame, index):
         "open_klu_rate": (last_klu.close - last_klu.open) / last_klu.open,
     }
 
-def t1_sell_stragety_feature(last_klu, dataframe: DataFrame, index):
-    return {
-            ### 动量指标 Momentum Indicators ###
-            "adx": dataframe['adx'][index],
-            "adxr": dataframe['adxr'][index],
-            "apo": dataframe['apo'][index],
-            "aroondown": dataframe['aroondown'][index],
-            "aroonup": dataframe['aroonup'][index],
-            "aroonosc": dataframe['aroonosc'][index],
-            "bop": dataframe['bop'][index],
-            "cci": dataframe['cci'][index],
-            "cmo": dataframe['cmo'][index],
-            "dx": dataframe['dx'][index],
-            "macd": dataframe['macd'][index],
-            "macdsignal": dataframe['macdsignal'][index],
-            "macdhist": dataframe['macdhist'][index],
-            "macd_diff": dataframe['macd_diff'][index],
-            "macd_hist_slope": dataframe['macd_hist_slope'][index],
-            "macd_hist_std": dataframe['macd_hist_std'][index],
-            "mfi": dataframe['mfi'][index],
-            "minus_di": dataframe['minus_di'][index],
-            "minus_dm": dataframe['minus_dm'][index],
-            "mom": dataframe['mom'][index],
-            "plus_di": dataframe['plus_di'][index],
-            "plus_dm": dataframe['plus_dm'][index],
-            "ppo": dataframe['ppo'][index],
-            "roc": dataframe['roc'][index],
-            "rocp": dataframe['rocp'][index],
-            "rocr": dataframe['rocr'][index],
-            "rocr100": dataframe['rocr100'][index],
-            "rsi": dataframe['rsi'][index],
-            "slowk": dataframe['slowk'][index],
-            "slowd": dataframe['slowd'][index],
-            "stochf_fastk": dataframe['stochf_fastk'][index],
-            "stochf_fastd": dataframe['stochf_fastd'][index],
-            "stochrsi_fastk": dataframe['stochrsi_fastk'][index],
-            "stochrsi_fastd": dataframe['stochrsi_fastd'][index],
-            "trix": dataframe['trix'][index],
-            "ultosc": dataframe['ultosc'][index],
-            "willr": dataframe['willr'][index],
 
-            ### 交易量指示器 Volume Indicators ###
-            "ad": dataframe['ad'][index],
-            "adosc": dataframe['adosc'][index],
-            "obv": dataframe['obv'][index],
+def t1_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame, index, klu_idx, cur_lv_chan):
+    features = {
+        ### 动量指标 Momentum Indicators ###
+        # "adx": dataframe['adx'][index],
+        # "adxr": dataframe['adxr'][index],
+        "apo": dataframe['apo'][index],
+        "bop": dataframe['bop'][index],
+        "cci": dataframe['cci'][index],
+        "cmo": dataframe['cmo'][index],
+        "dx": dataframe['dx'][index],
+        "macd_hist_std": dataframe['macd_hist_std'][index],
+        "macd_hist_slope": dataframe['macd_hist_slope'][index],
+        # "macd_diff": dataframe['macd_diff'][index],
+        "mfi": dataframe['mfi'][index],
+        "minus_di": dataframe['minus_di'][index],
+        "minus_dm": dataframe['minus_dm'][index],
+        "mom": dataframe['mom'][index],
+        # "plus_di": dataframe['plus_di'][index],
+        # "plus_dm": dataframe['plus_dm'][index],
+        "ppo": dataframe['ppo'][index],
+        "rsi": dataframe['rsi'][index],
+        "slowk": dataframe['slowk'][index],
+        "slowd": dataframe['slowd'][index],
+        "stochf_fastk": dataframe['stochf_fastk'][index],
+        "stochf_fastd": dataframe['stochf_fastd'][index],
+        "stochrsi_fastk": dataframe['stochrsi_fastk'][index],
+        "stochrsi_fastd": dataframe['stochrsi_fastd'][index],
+        "trix": dataframe['trix'][index],
+        "ultosc": dataframe['ultosc'][index],
+        "willr": dataframe['willr'][index],
+        "willr_slope": dataframe['willr_slope'][index],
+        "willr_std": dataframe['willr_std'][index],
+        ### 交易量指示器 Volume Indicators ###
+        # "ad": dataframe['ad'][index],
+        # "adosc": dataframe['adosc'][index],
+        # "obv": dataframe['obv'][index],
 
-            ### 周期指标 Cycle Indicators ###
-            "ht_dcperiod": dataframe['ht_dcperiod'][index],
-            "ht_dcphase": dataframe['ht_dcphase'][index],
+        ### 周期指标 Cycle Indicators ###
+        "ht_dcperiod": dataframe['ht_dcperiod'][index],
+        "ht_dcphase": dataframe['ht_dcphase'][index],
 
-            # ht_phasor
-            "inphase": dataframe['inphase'][index],
-            "quadrature": dataframe['quadrature'][index],
-            # ht_phasor
-            "sine": dataframe['sine'][index],
-            "leadsine": dataframe['leadsine'][index],
-            # "ht_trendmode": dataframe['ht_trendmode'][index],
+        # ht_phasor
+        "inphase": dataframe['inphase'][index],
+        "quadrature": dataframe['quadrature'][index],
+        # ht_phasor
+        "sine": dataframe['sine'][index],
+        "leadsine": dataframe['leadsine'][index],
+        # "ht_trendmode": dataframe['ht_trendmode'][index],
 
-            ### 价格转换 Price Transform ###
-            "avgprice": dataframe['avgprice'][index],
-            "medprice": dataframe['medprice'][index],
-            "typprice": dataframe['typprice'][index],
-            "wclprice": dataframe['wclprice'][index],
+        ### 价格转换 Price Transform ###
+        # "avgprice": dataframe['avgprice'][index],
+        # "medprice": dataframe['medprice'][index],
+        # "typprice": dataframe['typprice'][index],
+        # "wclprice": dataframe['wclprice'][index],
 
-            ### 波动性指标 Volatility Indicators ###
-            "atr": dataframe['atr'][index],
-            "natr": dataframe['natr'][index],
-            "trange": dataframe['trange'][index],
+        ### 波动性指标 Volatility Indicators ###
+        "atr": dataframe['atr'][index],
+        "natr": dataframe['natr'][index],
+        "trange": dataframe['trange'][index],
 
-            ### 形态识别 Pattern Recognition ###
-            "cdl3blackcrows": dataframe['cdl3blackcrows'][index],
-            "cdl3inside": dataframe['cdl3inside'][index],
-            "cdl3linestrike": dataframe['cdl3linestrike'][index],
-            "cdl3outside": dataframe['cdl3outside'][index],
-            "cdl3whitesoldiers": dataframe['cdl3whitesoldiers'][index],
-            "cdladvanceblock": dataframe['cdladvanceblock'][index],
-            "cdlbelthold": dataframe['cdlbelthold'][index],
-            "cdlclosingmarubozu": dataframe['cdlclosingmarubozu'][index],
-            "cdldarkcloudcover": dataframe['cdldarkcloudcover'][index],
-            "cdldoji": dataframe['cdldoji'][index],
-            "cdldojistar": dataframe['cdldojistar'][index],
-            "cdldragonflydoji": dataframe['cdldragonflydoji'][index],
-            "cdlengulfing": dataframe['cdlengulfing'][index],
-            "cdleveningdojistar": dataframe['cdleveningdojistar'][index],
-            "cdleveningstar": dataframe['cdleveningstar'][index],
-            "cdlgapsidesidewhite": dataframe['cdlgapsidesidewhite'][index],
-            "cdlgravestonedoji": dataframe['cdlgravestonedoji'][index],
-            "cdlhammer": dataframe['cdlhammer'][index],
-            "cdlhangingman": dataframe['cdlhangingman'][index],
-            "cdlharami": dataframe['cdlharami'][index],
-            "cdlharamicross": dataframe['cdlharamicross'][index],
-            "cdlhighwave": dataframe['cdlhighwave'][index],
-            "cdlhikkake": dataframe['cdlhikkake'][index],
-            "cdlhikkakemod": dataframe['cdlhikkakemod'][index],
-            "cdlhomingpigeon": dataframe['cdlhomingpigeon'][index],
-            "cdlidentical3crows": dataframe['cdlidentical3crows'][index],
-            "cdlinneck": dataframe['cdlinneck'][index],
-            "cdlinvertedhammer": dataframe['cdlinvertedhammer'][index],
-            "cdllongleggeddoji": dataframe['cdllongleggeddoji'][index],
-            "cdllongline": dataframe['cdllongline'][index],
-            "cdlmarubozu": dataframe['cdlmarubozu'][index],
-            "cdlmatchinglow": dataframe['cdlmatchinglow'][index],
-            "cdlmorningdojistar": dataframe['cdlmorningdojistar'][index],
-            "cdlmorningstar": dataframe['cdlmorningstar'][index],
-            "cdlonneck": dataframe['cdlonneck'][index],
-            "cdlpiercing": dataframe['cdlpiercing'][index],
-            "cdlrickshawman": dataframe['cdlrickshawman'][index],
-            "cdlrisefall3methods": dataframe['cdlrisefall3methods'][index],
-            "cdlseparatinglines": dataframe['cdlseparatinglines'][index],
-            "cdlshootingstar": dataframe['cdlshootingstar'][index],
-            "cdlshortline": dataframe['cdlshortline'][index],
-            "cdlspinningtop": dataframe['cdlspinningtop'][index],
-            "cdlstalledpattern": dataframe['cdlstalledpattern'][index],
-            "cdlsticksandwich": dataframe['cdlsticksandwich'][index],
-            "cdltakuri": dataframe['cdltakuri'][index],
-            "cdltasukigap": dataframe['cdltasukigap'][index],
-            "cdlthrusting": dataframe['cdlthrusting'][index],
-            "cdltristar": dataframe['cdltristar'][index],
-            "cdlxsidegap3methods": dataframe['cdlxsidegap3methods'][index],
+        ### 统计函数 Statistic Functions ###
+        "beta": dataframe['beta'][index],
+        "correl": dataframe['correl'][index],
 
-            ### 统计函数 Statistic Functions ###
-            "beta": dataframe['beta'][index],
-            "correl": dataframe['correl'][index],
-            "linearreg": dataframe['linearreg'][index],
-            "linearreg_angle": dataframe['linearreg_angle'][index],
-            "linearreg_intercept": dataframe['linearreg_intercept'][index],
-            "linearreg_slope": dataframe['linearreg_slope'][index],
-            "stddev": dataframe['stddev'][index],
-            "tsf": dataframe['tsf'][index],
-            "var": dataframe['var'][index],
+        ### 重叠研究 Overlap Studies ###
+        # "bb_lowerband": dataframe['bb_lowerband'][index],
+        # "bb_upperband": dataframe['bb_upperband'][index],
+        # "bb_middleband": dataframe['bb_middleband'][index],
+        "bb_pct": dataframe['bb_pct'][index],
+        "bb_diff_std": dataframe['bb_diff_std'][index],
+        "bb_width_pct": dataframe['bb_width_pct'][index],
+        "bb_break_upper": dataframe['bb_break_upper'][index],
+        "bb_break_lower": dataframe['bb_break_lower'][index],
+        "bb_lowerband_slope_5": dataframe['bb_lowerband_slope_5'][index],
+        "bb_upperband_slope_5": dataframe['bb_upperband_slope_5'][index],
+        "bb_middleband_slope_5": dataframe['bb_middleband_slope_5'][index],
+        "bb_upperband_lowerband_slope_diff_5": dataframe['bb_upperband_lowerband_slope_diff_5'][index],
+        "bb_upperband_middleband_slope_diff_5": dataframe['bb_upperband_middleband_slope_diff_5'][index],
+        "bb_middleband_lowerband_slope_diff_5": dataframe['bb_middleband_lowerband_slope_diff_5'][index],
+        # "dema": dataframe['dema'][index],
+        # 均线
+        "close_vs_ema7": dataframe['close_vs_ema7'][index],
+        "close_vs_ema25": dataframe['close_vs_ema25'][index],
+        "ema7_vs_ema25": dataframe['ema7_vs_ema25'][index],
+        "slope_ema7": dataframe['slope_ema7'][index],
+        "slope_ema25": dataframe['slope_ema25'][index],
+        "close_vs_sma25": dataframe['close_vs_sma25'][index],
+        "close_vs_sma99": dataframe['close_vs_sma99'][index],
+        "sma25_vs_sma99": dataframe['sma25_vs_sma99'][index],
+        "slope_sma25": dataframe['slope_sma25'][index],
+        "slope_sma99": dataframe['slope_sma99'][index],
+        "close_vs_kama25": dataframe['close_vs_kama25'][index],
+        "slope_kama25": dataframe['slope_kama25'][index],
+        "close_vs_tema7": dataframe['close_vs_tema7'][index],
+        "slope_tema7": dataframe['slope_tema7'][index],
 
-            ### 重叠研究 Overlap Studies ###
-            "bb_lowerband": dataframe['bb_lowerband'][index],
-            "bb_upperband": dataframe['bb_upperband'][index],
-            "bb_middleband": dataframe['bb_middleband'][index],
-
-            "dema": dataframe['dema'][index],
-            # ema
-            "ema_5": dataframe['ema_5'][index],
-            "ema_10": dataframe['ema_10'][index],
-            "ema_20": dataframe['ema_20'][index],
-            "ema_30": dataframe['ema_30'][index],
-
-            "ht_trendline": dataframe['ht_trendline'][index],
-            # kama 考夫曼均线
-            "kama_5": dataframe['kama_5'][index],
-            "kama_10": dataframe['kama_10'][index],
-            "kama_20": dataframe['kama_20'][index],
-            "kama_30": dataframe['kama_30'][index],
-            # ma
-            "ma_20": dataframe['ma_20'][index],
-            "ma_20": dataframe['ma_20'][index],
-            "ma_20": dataframe['ma_20'][index],
-            "ma_30": dataframe['ma_30'][index],
-
-            "mama": dataframe['mama'][index],
-            "fama": dataframe['fama'][index],
-            "midpoint": dataframe['midpoint'][index],
-            "midprice": dataframe['midprice'][index],
-            "sar": dataframe['sar'][index],
-            "sarext": dataframe['sarext'][index],
-            # sma
-            "sma_5": dataframe['sma_5'][index],
-            "sma_10": dataframe['sma_10'][index],
-            "sma_20": dataframe['sma_20'][index],
-            "sma_30": dataframe['sma_30'][index],
-            # tema
-            "tema_5": dataframe['tema_5'][index],
-            "tema_10": dataframe['tema_10'][index],
-            "tema_20": dataframe['tema_20'][index],
-            "tema_30": dataframe['tema_30'][index],
-            # t3
-            "t3_5": dataframe['t3_5'][index],
-            "t3_10": dataframe['t3_10'][index],
-            "t3_20": dataframe['t3_20'][index],
-            "t3_30": dataframe['t3_30'][index],
-            # trima
-            "trima_5": dataframe['trima_5'][index],
-            "trima_10": dataframe['trima_10'][index],
-            "trima_20": dataframe['trima_20'][index],
-            "trima_30": dataframe['trima_30'][index],
-            # wma
-            "wma_30": dataframe['wma_30'][index],
-            "wma_20": dataframe['wma_20'][index],
-            "wma_10": dataframe['wma_10'][index],
-            "wma_5": dataframe['wma_5'][index],
-            "open_klu_rate": (last_klu.close - last_klu.open) / last_klu.open,
+        # "ht_trendline": dataframe['ht_trendline'][index],
+        # "close_kama_7_ratio": dataframe['close_kama_7_ratio'][index],
+        # "close_kama_25_ratio": dataframe['close_kama_25_ratio'][index],
+        # "kama_7_25_ratio": dataframe['kama_7_25_ratio'][index],
+        # "close_kama_99_ratio": dataframe['close_kama_99_ratio'][index],
+        # "kama_7_99_ratio": dataframe['kama_7_99_ratio'][index],
+        # "kama_25_99_ratio": dataframe['kama_25_99_ratio'][index],
+        # "close_ma_7_ratio": dataframe['close_ma_7_ratio'][index],
+        # "close_ma_25_ratio": dataframe['close_ma_25_ratio'][index],
+        # "ma_7_25_ratio": dataframe['ma_7_25_ratio'][index],
+        # "close_ma_99_ratio": dataframe['close_ma_99_ratio'][index],
+        # "ma_7_99_ratio": dataframe['ma_7_99_ratio'][index],
+        # "ma_25_99_ratio": dataframe['ma_25_99_ratio'][index],
+        # "mama": dataframe['mama'][index],
+        # "fama": dataframe['fama'][index],
+        # "midpoint": dataframe['midpoint'][index],
+        # "midprice": dataframe['midprice'][index],
+        # "sar": dataframe['sar'][index],
+        "sar_distance": dataframe['sar_distance'][index],
+        "sar_slope_down": dataframe['sar_slope_down'][index],
+        "sar_slope_up": dataframe['sar_slope_up'][index],
+        # "close_sma_7_ratio": dataframe['close_sma_7_ratio'][index],
+        # "close_sma_25_ratio": dataframe['close_sma_25_ratio'][index],
+        # "sma_7_25_ratio": dataframe['sma_7_25_ratio'][index],
+        # "close_sma_99_ratio": dataframe['close_sma_99_ratio'][index],
+        # "sma_7_99_ratio": dataframe['sma_7_99_ratio'][index],
+        # "sma_25_99_ratio": dataframe['sma_25_99_ratio'][index],
+        "open_klu_rate": (last_klu.close - last_klu.open) / last_klu.open,
+        "close_slope_5": dataframe['close_slope_5'][index],
+        "close_slope_14": dataframe['close_slope_14'][index],
+        "close_pct_5": dataframe['close_pct_5'][index],
+        "close_mom_10": dataframe['close_mom_10'][index],
+        "volume_slope_14": dataframe['volume_slope_14'][index],
+        "vol_close_slope_div": dataframe['vol_close_slope_div'][index],
+        "volume_pct_5": dataframe['volume_pct_5'][index],
+        "vol_close_pct_div": dataframe['vol_close_pct_div'][index],
+        "volume_mom_10": dataframe['volume_mom_10'][index],
+        "vol_close_mom_div": dataframe['vol_close_mom_div'][index],
+        "rsi_slope_14": dataframe['rsi_slope_14'][index],
+        "rsi_slope_5": dataframe['rsi_slope_5'][index],
+        "rsi_divergence_5": dataframe['rsi_divergence_5'][index],
+        "rsi_divergence_14": dataframe['rsi_divergence_14'][index],
     }
+    features['top_strength'] = dataframe.loc[klu_idx - index + klu_idx:index, ['high']].apply(
+        lambda x: (x[klu_idx] - x.drop(klu_idx).max()) / x[klu_idx]
+        if (x[klu_idx] > x.drop(klu_idx).max())
+        else 0
+    ).item()
+    features['top_vol_decay'] = dataframe.loc[klu_idx - index + klu_idx:index, ['volume']].apply(
+        lambda x: x[klu_idx] / (x.drop(klu_idx).mean()) if (x[klu_idx] > (x.drop(klu_idx).max())) else 1
+    ).item()
+    features['fractal_decay'] = np.exp(-0.1 * (index - klu_idx))
+    features['top_composite_strength'] = (
+            features['top_strength'] * features['top_vol_decay'] * features['fractal_decay']).item()
+    bi = last_bsp.bi
+    pre_bi = last_bsp.bi.pre
+    next_bi = last_bsp.bi.next
+    bi_high = (bi._high() - bi._low())
+    bi_high_ratio = bi_high / (bi.get_begin_klu().open)
+    features['bi_high_ratio'] = bi_high_ratio
+    features['bi_angle'] = cal_bi_angle(bi.get_begin_klu().close, bi.get_end_klu().close,
+                                        bi.get_end_klu().idx - bi.get_begin_klu().idx)
+    if pre_bi:
+        features['pre_bi_angle'] = cal_bi_angle(pre_bi.get_begin_klu().close, pre_bi.get_end_klu().close,
+                                                pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
+        pre_bi_angle = cal_bi_angle(pre_bi.get_begin_klu().close, pre_bi.get_end_klu().close,
+                                    pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
+        features['pre_now_angle_diff'] = features['bi_angle'] - pre_bi_angle
+    # bi_momentum_pre = cal_bi_momentum(pre_bi)
+    # bi_momentum_curr = cal_bi_momentum(bi)
+    # features['bi_momentum_pre'] = bi_momentum_pre
+    # features['bi_momentum_curr'] = bi_momentum_curr
+    # features['bi_momentum_decay_ratio'] = bi_momentum_curr / bi_momentum_pre
+    # features['bi_volume_decay'] = bi.get_end_klu().volume / bi.get_begin_klu().volume
+    cal_zh_feature(cur_lv_chan.zs_list[-1], dataframe, features,last_klu)
+    bi_in_macd_area, bi_out_macd_area, macd_area_ratio = cal_zs_in_out_bi_macd_area(cur_lv_chan.zs_list[-1], dataframe)
+    # features['bi_in_macd_area'] = bi_in_macd_area
+    # features['bi_out_macd_area'] = bi_out_macd_area
+    features['macd_area_ratio'] = macd_area_ratio
+    return features
 
 def cal_bi_angle(begin_close, end_close, length):
     return np.arctan((begin_close - end_close) / length) * 180 / np.pi
@@ -380,6 +370,41 @@ def cal_zs_in_out_bi_macd_area(zs:CZS,dataframe:pd.DataFrame):
     bi_out_macd_area = dataframe.iloc[bi_out.get_begin_klu().idx:bi_out.get_end_klu().idx + 1]['macdhist'].abs().sum().item()
     macd_area_ratio = bi_out_macd_area / bi_in_macd_area
     return bi_in_macd_area,bi_out_macd_area,macd_area_ratio
+
+def cal_zh_feature(zs,dataframe:pd.DataFrame,features,last_klu):
+    # 中枢上沿
+    zs_upper_edge = zs.high
+    # 中枢下沿
+    zs_lower_edge = zs.low
+    # 中枢高度
+    zs_height = zs_upper_edge - zs_lower_edge
+    # 中枢向下价格系数
+    zs_downward_price_coeff = (zs_lower_edge - last_klu.close) / zs_height
+    zs_downward_price_coeff = max(zs_downward_price_coeff, 0)
+
+    zs_begin_klu_idx = zs.begin_bi.get_begin_klu().idx
+    zs_end_klu_idx = zs.end_bi.get_end_klu().idx
+    zs_avg_atr = dataframe.iloc[zs_begin_klu_idx:zs_end_klu_idx + 1]['atr'].mean()
+    zs_bi_out_avg_atr = dataframe.iloc[zs.bi_out.get_begin_klu().idx:zs.bi_out.get_end_klu().idx + 1]['atr'].mean()
+    # 中枢波动率系数
+    zs_out_atr_ratio = zs_bi_out_avg_atr / zs_avg_atr
+
+    zs_avg_volume = dataframe.iloc[zs_begin_klu_idx:zs_end_klu_idx + 1]['volume'].mean()
+    zs_bi_out_avg_volume = dataframe.iloc[zs.bi_out.get_begin_klu().idx:zs.bi_out.get_end_klu().idx + 1][
+        'volume'].mean()
+    # 中枢量能系数
+    zs_out_volume_ratio = zs_bi_out_avg_volume / zs_avg_volume
+    # 中枢时间系数
+    zs_time_coeff = np.log(zs_end_klu_idx - zs_begin_klu_idx + 1) / 5
+
+    zs_out_score = (0.4 * zs_downward_price_coeff * 100 + 0.25 * min(zs_out_volume_ratio, 3) * 33.3 + 0.2 * min(
+        zs_out_atr_ratio, 2) * 50 + 0.15 * zs_time_coeff * 100)
+    zs_break_strength = np.clip(zs_out_score, 0, 100)
+    features['zs_break_strength'] = zs_break_strength
+    features['zs_time_coeff'] = zs_time_coeff
+    features['zs_out_volume_ratio'] = zs_out_volume_ratio
+    features['zs_downward_price_coeff'] = zs_downward_price_coeff
+    features['zs_out_atr_ratio'] = zs_out_atr_ratio
 
 def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame, index, klu_idx, cur_lv_chan):
     features = {
@@ -572,23 +597,22 @@ def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
             if (x[klu_idx] < x.drop(klu_idx).min())
             else 0
         ).item()
-        # 成交量衰减因子
-    features['vol_decay'] = dataframe.loc[klu_idx - index + klu_idx:index, ['volume']].apply(
-            lambda x: x[klu_idx] / (x.drop(klu_idx).mean()) if (x[klu_idx] > (x.drop(klu_idx).max())) else 1
-        ).item()
 
         # 底分型成交量放大因子
-    features['vol_growth'] = dataframe.loc[klu_idx - index + klu_idx:index, ['volume']].apply(
+    features['bottom_vol_growth'] = dataframe.loc[klu_idx - index + klu_idx:index, ['volume']].apply(
             lambda x: x[klu_idx] / (x.drop(klu_idx).mean()) if (x[klu_idx] < (x.drop(klu_idx).min())) else 1
         ).item()
     features['fractal_decay'] = np.exp(-0.1 * (index - klu_idx))
     features['bottom_composite_strength'] = (
-                features['bottom_strength'] * features['vol_growth'] * features['fractal_decay']).item()
+                features['bottom_strength'] * features['bottom_vol_growth'] * features['fractal_decay']).item()
     bi = last_bsp.bi
     pre_bi = last_bsp.bi.pre
     next_bi = last_bsp.bi.next
     features['bi_angle'] = cal_bi_angle(bi.get_begin_klu().close, bi.get_end_klu().close,
                                             bi.get_end_klu().idx - bi.get_begin_klu().idx)
+    bi_high = (bi._high() - bi._low())
+    bi_high_ratio = bi_high / (bi.get_begin_klu().open)
+    features['bi_high_ratio'] = bi_high_ratio
     if pre_bi:
         features['pre_bi_angle'] = cal_bi_angle(pre_bi.get_begin_klu().close, pre_bi.get_end_klu().close,
                                                     pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
@@ -596,48 +620,48 @@ def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
                                                     pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
         features['pre_now_angle_diff'] = features['bi_angle'] - pre_bi_angle
 
-    # bi_momentum_pre = cal_bi_momentum(pre_bi)
-    # bi_momentum_curr = cal_bi_momentum(bi)
+    bi_momentum_pre = cal_bi_momentum(pre_bi)
+    bi_momentum_curr = cal_bi_momentum(bi)
     # features['bi_momentum_pre'] = bi_momentum_pre
     # features['bi_momentum_curr'] = bi_momentum_curr
-    # features['bi_momentum_decay_ratio'] = bi_momentum_curr / bi_momentum_pre
-    # features['bi_volume_decay'] = bi.get_end_klu().volume / bi.get_begin_klu().volume
+    features['bi_momentum_decay_ratio'] = bi_momentum_curr / bi_momentum_pre
+    features['bi_volume_decay'] = bi.get_end_klu().volume / bi.get_begin_klu().volume
+    cal_zh_feature(cur_lv_chan.zs_list[-1],dataframe, features,last_klu)
+    # zs = cur_lv_chan.zs_list[-1]
+    # # 中枢上沿
+    # zs_upper_edge = zs.high
+    # # 中枢下沿
+    # zs_lower_edge = zs.low
+    # # 中枢高度
+    # zs_height = zs_upper_edge - zs_lower_edge
+    # # 中枢向下价格系数
+    # zs_downward_price_coeff = (zs_lower_edge-last_klu.close) / zs_height
+    # zs_downward_price_coeff = max(zs_downward_price_coeff, 0)
+    #
+    # zs_begin_klu_idx = zs.begin_bi.get_begin_klu().idx
+    # zs_end_klu_idx = zs.end_bi.get_end_klu().idx
+    # zs_avg_atr = dataframe.iloc[zs_begin_klu_idx:zs_end_klu_idx + 1]['atr'].mean()
+    # zs_bi_out_avg_atr = dataframe.iloc[zs.bi_out.get_begin_klu().idx:zs.bi_out.get_end_klu().idx + 1]['atr'].mean()
+    # # 中枢波动率系数
+    # zs_out_atr_ratio = zs_bi_out_avg_atr/zs_avg_atr
+    #
+    # zs_avg_volume = dataframe.iloc[zs_begin_klu_idx:zs_end_klu_idx + 1]['volume'].mean()
+    # zs_bi_out_avg_volume = dataframe.iloc[zs.bi_out.get_begin_klu().idx:zs.bi_out.get_end_klu().idx + 1][
+    #     'volume'].mean()
+    # # 中枢量能系数
+    # zs_out_volume_ratio = zs_bi_out_avg_volume / zs_avg_volume
+    # # 中枢时间系数
+    # zs_time_coeff = np.log(zs_end_klu_idx - zs_begin_klu_idx + 1) / 5
+    #
+    # zs_out_score = (0.4 * zs_downward_price_coeff *100 + 0.25*min(zs_out_volume_ratio,3) * 33.3+0.2*min(zs_out_atr_ratio,2)*50 +0.15*zs_time_coeff*100)
+    # zs_break_strength = np.clip(zs_out_score,0,100)
+    # features['zs_break_strength'] = zs_break_strength
+    # features['zs_time_coeff'] = zs_time_coeff
+    # features['zs_out_volume_ratio'] = zs_out_volume_ratio
+    # features['zs_downward_price_coeff'] = zs_downward_price_coeff
+    # features['zs_out_atr_ratio'] = zs_out_atr_ratio
 
-    zs = cur_lv_chan.zs_list[-1]
-    # 中枢上沿
-    zs_upper_edge = zs.high
-    # 中枢下沿
-    zs_lower_edge = zs.low
-    # 中枢高度
-    zs_height = zs_upper_edge - zs_lower_edge
-    # 中枢向下价格系数
-    zs_downward_price_coeff = (zs_lower_edge-last_klu.close) / zs_height
-    zs_downward_price_coeff = max(zs_downward_price_coeff, 0)
-
-    zs_begin_klu_idx = zs.begin_bi.get_begin_klu().idx
-    zs_end_klu_idx = zs.end_bi.get_end_klu().idx
-    zs_avg_atr = dataframe.iloc[zs_begin_klu_idx:zs_end_klu_idx + 1]['atr'].mean()
-    zs_bi_out_avg_atr = dataframe.iloc[zs.bi_out.get_begin_klu().idx:zs.bi_out.get_end_klu().idx + 1]['atr'].mean()
-    # 中枢波动率系数
-    zs_out_atr_ratio = zs_bi_out_avg_atr/zs_avg_atr
-
-    zs_avg_volume = dataframe.iloc[zs_begin_klu_idx:zs_end_klu_idx + 1]['volume'].mean()
-    zs_bi_out_avg_volume = dataframe.iloc[zs.bi_out.get_begin_klu().idx:zs.bi_out.get_end_klu().idx + 1][
-        'volume'].mean()
-    # 中枢量能系数
-    zs_out_volume_ratio = zs_bi_out_avg_volume / zs_avg_volume
-    # 中枢时间系数
-    zs_time_coeff = np.log(zs_end_klu_idx - zs_begin_klu_idx + 1) / 5
-
-    zs_out_score = (0.4 * zs_downward_price_coeff *100 + 0.25*min(zs_out_volume_ratio,3) * 33.3+0.2*min(zs_out_atr_ratio,2)*50 +0.15*zs_time_coeff*100)
-    zs_break_strength = np.clip(zs_out_score,0,100)
-    features['zs_break_strength'] = zs_break_strength
-    features['zs_time_coeff'] = zs_time_coeff
-    features['zs_out_volume_ratio'] = zs_out_volume_ratio
-    features['zs_downward_price_coeff'] = zs_downward_price_coeff
-    features['zs_out_atr_ratio'] = zs_out_atr_ratio
-
-    bi_in_macd_area,bi_out_macd_area,macd_area_ratio = cal_zs_in_out_bi_macd_area(zs,dataframe)
+    bi_in_macd_area,bi_out_macd_area,macd_area_ratio = cal_zs_in_out_bi_macd_area(cur_lv_chan.zs_list[-1],dataframe)
     # features['bi_in_macd_area'] = bi_in_macd_area
     # features['bi_out_macd_area'] = bi_out_macd_area
     features['macd_area_ratio'] = macd_area_ratio
@@ -676,7 +700,7 @@ def write_libsvm(file_name: str, dict: Dict[int, T_SAMPLE_INFO], bsp_academy, fe
             negative += 1
         features = []  # List[(idx, value)]
         for feature_name, value in feature_info['feature'].items():
-            if(feature_name in selected_feature_names):
+            # if(feature_name in selected_feature_names):
                 if feature_name not in feature_meta:
                     cur_feature_idx = feature_idx[-1]
                     feature_meta[feature_name] = cur_feature_idx
@@ -692,7 +716,7 @@ def write_libsvm(file_name: str, dict: Dict[int, T_SAMPLE_INFO], bsp_academy, fe
     fid.close()
     print(file_name, "正样本", positive, "负样本", negative)
 
-def save_libsvm_file(file_name: str, dict: Dict[int, T_SAMPLE_INFO], bsp_academy,):
+def save_libsvm_file(chan: CChan, bsp_dict: Dict[int, T_SAMPLE_INFO], type: BSP_TYPE, is_buy: bool):
     buy_flag = None
     if is_buy:
         buy_flag = 'buy'
@@ -722,57 +746,8 @@ def save_libsvm_file(file_name: str, dict: Dict[int, T_SAMPLE_INFO], bsp_academy
     train_file_name = prifix + "train.libsvm"
     val_file_name = prifix + "val.libsvm"
     test_file_name = prifix + "test.libsvm"
-    #
 
     # 注释范围start
-    train_dict, val_dict, test_dict = split_three_phases(bsp_dict)
-    write_libsvm(train_file_name, train_dict, bsp_academy, feature_meta, feature_idx, plot_marker,
-                 selected_feature_names)
-    write_libsvm(val_file_name, val_dict, bsp_academy, feature_meta, feature_idx, plot_marker, selected_feature_names)
-    write_libsvm(test_file_name, test_dict, bsp_academy, feature_meta, feature_idx, plot_marker, selected_feature_names)
-
-    with open(prifix + "feature.meta", "w") as fid:
-        # meta保存下来，实盘预测时特征对齐用
-        fid.write(json.dumps(feature_meta))
-
-    # 画图检查label是否正确
-    # plot(chan, plot_marker, type, is_buy)
-    # 注释范围end
-
-def model_tran(chan: CChan, bsp_dict: Dict[int, T_SAMPLE_INFO], type: BSP_TYPE, is_buy: bool, scale_pos_weight):
-    buy_flag = None
-    if is_buy:
-        buy_flag = 'buy'
-    else:
-        buy_flag = 'sell'
-    prifix = type.name + "_" + buy_flag + "_"
-    # 生成libsvm样本特征
-    bsp_academy = [bsp.klu.idx for bsp in chan.get_bsp()]
-    bsp_feature = []
-    bsp_label = []
-    for bsp_klu_idx, feature_info in bsp_dict.items():
-        label = int(bsp_klu_idx in bsp_academy)
-        feature_item = {}
-        for feature_name, value in feature_info['feature'].items():
-            feature_item[feature_name] = value
-        bsp_feature.append(feature_item)
-        bsp_label.append(label)
-    bsp_df = pd.DataFrame(bsp_feature)
-    bsp_y = pd.Series(bsp_label, name='target')
-    selected = select_features(bsp_df, bsp_y)
-    selected_feature_names = selected.columns.tolist()
-    for name in selected_feature_names:
-        print(name)
-    feature_meta = {}  # 特征meta
-    feature_idx = [0]
-    plot_marker = {}
-    train_file_name = prifix + "train.libsvm"
-    val_file_name = prifix + "val.libsvm"
-    test_file_name = prifix + "test.libsvm"
-    #
-
-
-# 注释范围start
     train_dict, val_dict, test_dict = split_three_phases(bsp_dict)
     write_libsvm(train_file_name, train_dict, bsp_academy, feature_meta, feature_idx, plot_marker,selected_feature_names)
     write_libsvm(val_file_name, val_dict, bsp_academy, feature_meta, feature_idx, plot_marker,selected_feature_names)
@@ -781,13 +756,37 @@ def model_tran(chan: CChan, bsp_dict: Dict[int, T_SAMPLE_INFO], type: BSP_TYPE, 
     with open(prifix + "feature.meta", "w") as fid:
         # meta保存下来，实盘预测时特征对齐用
         fid.write(json.dumps(feature_meta))
+    X_train, y_train = load_svmlight_file(train_file_name)
+    X_val, y_val = load_svmlight_file(val_file_name)
+    X_test, y_test = load_svmlight_file(train_file_name)
+    X_train = X_train.toarray()
+    smote = SMOTE(random_state=42)  # 不要100%平衡
+    enn = EditedNearestNeighbours(n_neighbors=3)
+    smote_enn = SMOTEENN(smote=smote, enn=enn)
+    smote_tomek = SMOTETomek(random_state=42)
 
+    X_somteenn_resampled, y_somteenn_resampled = smote_enn.fit_resample(X_train, y_train)
+    X_smote_tomek_resampled, y_smote_tomek_resampled = smote.fit_resample(X_train, y_train)
+    X_smote_resampled, y_smote_resampled = smote_tomek.fit_resample(X_train, y_train)
+    dump_svmlight_file(X_somteenn_resampled, y_somteenn_resampled, prifix + "somteenn_train.libsvm")
+    dump_svmlight_file(X_smote_tomek_resampled, y_smote_tomek_resampled, prifix + "smote_tomek_train.libsvm")
+    dump_svmlight_file(X_smote_resampled, y_smote_resampled, prifix + "smote_train.libsvm")
     # 画图检查label是否正确
     # plot(chan, plot_marker, type, is_buy)
-    # 注释范围end
 
+def copy_dict(t1_bsp_buy_dict,seg):
+    new_t1_bsp_buy_dict: Dict[int, T_SAMPLE_INFO] = {}
+    for bsp_klu_idx, feature_info in t1_bsp_buy_dict.items():
+        if bsp_klu_idx <= seg.get_end_klu().idx:
+            new_t1_bsp_buy_dict[bsp_klu_idx] = feature_info
+    return new_t1_bsp_buy_dict
 
-
+def copy_features(prifix,features):
+    feature_dict = {}
+    for feature_name, value in last_bsp.features.items():
+        if feature_name.startswith("bsp1"):
+            feature_dict[feature_name] = value
+    return CFeatures(feature_dict)
 
 if __name__ == "__main__":
         """
@@ -864,28 +863,20 @@ if __name__ == "__main__":
                             "is_buy": last_bsp.is_buy,
                             "open_time": klu.time,
                         }
-                        feature_dict = {}
-                        for feature_name, value in  last_bsp.features.items():
-                            if feature_name.startswith("bsp1") and (not feature_name.startswith("bsp1p")):
-                                feature_dict[feature_name] = value
-
-                        klu_idx = last_bsp.klu.idx
-                        # print("index", index, 'klu_idx', last_bsp.klu.idx)
-                        # result = data_src.get_df().loc[klu_idx - index + klu_idx:index,
-                        #          ['high', 'low', 'close', 'volume']]
-                        # print(result)
+                        t1_bsp_buy_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp1",last_bsp.features)
                         t1_bsp_feats = t1_buy_stragety_feature(klu, last_bsp, data_src.get_df(), index,
                                                                last_bsp.klu.idx, cur_lv_chan)
-                        t1_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(feature_dict)
                         t1_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(t1_bsp_feats)
                         # t1_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(bsp_feats)
                     else:
                         t1_bsp_sell_dict[last_bsp.klu.idx] = {
-                            "feature": copy.deepcopy(last_bsp.features),
                             "is_buy": last_bsp.is_buy,
                             "open_time": klu.time,
                         }
-                        t1_bsp_sell_dict[last_bsp.klu.idx]['feature'].add_feat(bsp_feats)
+                        t1_bsp_sell_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp1", last_bsp.features)
+                        t1_bsp_feats = t1_sell_stragety_feature(klu, last_bsp, data_src.get_df(), index,
+                                                               last_bsp.klu.idx, cur_lv_chan)
+                        t1_bsp_sell_dict[last_bsp.klu.idx]['feature'].add_feat(t1_bsp_feats)
 
                 if (BSP_TYPE.T2 in last_bsp.type or BSP_TYPE.T2S in last_bsp.type) and last_bsp.bi.pre:
                     if last_bsp.is_buy:
@@ -903,7 +894,6 @@ if __name__ == "__main__":
                         }
                         t2_bsp_sell_dict[last_bsp.klu.idx]['feature'].add_feat(bsp_feats)
                 # print(last_bsp.klu.time, last_bsp.is_buy)
-        print("=============T1 buy start ====================")
 
         seg = chan[0].seg_list[-1]
         while not seg.is_sure:
@@ -918,17 +908,20 @@ if __name__ == "__main__":
             print("begin klu",bi.get_begin_klu().idx,data_src.get_df().loc[bi.get_begin_klu().idx,'date'])
             bi = bi.pre
 
-        new_t1_bsp_buy_dict:Dict[int, T_SAMPLE_INFO] = {}
-        for bsp_klu_idx, feature_info in t1_bsp_buy_dict.items():
-            if bsp_klu_idx <= seg.get_end_klu().idx:
-                new_t1_bsp_buy_dict[bsp_klu_idx] = feature_info
-        # new_t1_bsp_buy_dict = t1_bsp_buy_dict
-
-        model_tran(chan, new_t1_bsp_buy_dict, BSP_TYPE.T1, True, 2.7)
+        new_t1_bsp_buy_dict =  copy_dict(t1_bsp_buy_dict, seg)
+        print("=============T1 buy start ====================")
+        save_libsvm_file(chan, new_t1_bsp_buy_dict, BSP_TYPE.T1, True)
+        t1_buy_xgb_model = XGB_Model("T1_buy_", True)
+        t1_buy_best_params, t1_buy_best_num_round = t1_buy_xgb_model.bayyesian_optimize()
+        t1_buy_xgb_model.model_tuning(t1_buy_best_params, t1_buy_best_num_round)
         print("=============T1 buy end ====================")
-        # print("=============T1 sell start ====================")
-        # model_tran(chan, t1_bsp_sell_dict, BSP_TYPE.T1, False,3.2)
-        # print("=============T1 sell end ====================")
+        print("=============T1 sell start ====================")
+        new_t1_bsp_sell_dict = copy_dict(t1_bsp_sell_dict, seg)
+        save_libsvm_file(chan, new_t1_bsp_sell_dict, BSP_TYPE.T1, False)
+        t1_sell_xgb_model = XGB_Model("T1_sell_", False,'T1_sell_smote_tomek_train.libsvm')
+        t1_sell_best_params, t1_buy_best_num_round = t1_sell_xgb_model.bayyesian_optimize()
+        t1_sell_xgb_model.model_tuning(t1_sell_best_params, t1_buy_best_num_round)
+        print("=============T1 sell end ====================")
         # print("=============T2 buy start ====================")
         # model_tran(chan, t2_bsp_buy_dict, BSP_TYPE.T2, True,2)
         # print("=============T2 buy end ====================")
