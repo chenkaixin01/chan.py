@@ -359,11 +359,11 @@ def t1p_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFram
         "mfi": dataframe['mfi'][index],
         "minus_di": dataframe['minus_di'][index],
         "minus_dm": dataframe['minus_dm'][index],
-        "mom": dataframe['mom'][index],
+        # "mom": dataframe['mom'][index],
         # "plus_di": dataframe['plus_di'][index],
         # "plus_dm": dataframe['plus_dm'][index],
         "ppo": dataframe['ppo'][index],
-        "rsi": dataframe['rsi'][index],
+        # "rsi": dataframe['rsi'][index],
         "slowk": dataframe['slowk'][index],
         "slowd": dataframe['slowd'][index],
         "stochf_fastk": dataframe['stochf_fastk'][index],
@@ -414,8 +414,8 @@ def t1p_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFram
         "bb_pct": dataframe['bb_pct'][index],
         "bb_diff_std": dataframe['bb_diff_std'][index],
         "bb_width_pct": dataframe['bb_width_pct'][index],
-        "bb_break_upper": dataframe['bb_break_upper'][index],
-        "bb_break_lower": dataframe['bb_break_lower'][index],
+        # "bb_break_upper": dataframe['bb_break_upper'][index],
+        # "bb_break_lower": dataframe['bb_break_lower'][index],
         "bb_lowerband_slope_5": dataframe['bb_lowerband_slope_5'][index],
         "bb_upperband_slope_5": dataframe['bb_upperband_slope_5'][index],
         "bb_middleband_slope_5": dataframe['bb_middleband_slope_5'][index],
@@ -482,17 +482,17 @@ def t1p_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFram
         "rsi_divergence_5": dataframe['rsi_divergence_5'][index],
         "rsi_divergence_14": dataframe['rsi_divergence_14'][index],
     }
-    features['top_strength'] = dataframe.loc[klu_idx - index + klu_idx:index, ['high']].apply(
-        lambda x: (x[klu_idx] - x.drop(klu_idx).max()) / x[klu_idx]
-        if (x[klu_idx] > x.drop(klu_idx).max())
-        else 0
-    ).item()
+    # features['top_strength'] = dataframe.loc[klu_idx - index + klu_idx:index, ['high']].apply(
+    #     lambda x: (x[klu_idx] - x.drop(klu_idx).max()) / x[klu_idx]
+    #     if (x[klu_idx] > x.drop(klu_idx).max())
+    #     else 0
+    # ).item()
     features['top_vol_decay'] = dataframe.loc[klu_idx - index + klu_idx:index, ['volume']].apply(
         lambda x: x[klu_idx] / (x.drop(klu_idx).mean()) if (x[klu_idx] > (x.drop(klu_idx).max())) else 1
     ).item()
-    features['fractal_decay'] = np.exp(-0.1 * (index - klu_idx))
-    features['top_composite_strength'] = (
-            features['top_strength'] * features['top_vol_decay'] * features['fractal_decay']).item()
+    # features['fractal_decay'] = np.exp(-0.1 * (index - klu_idx))
+    # features['top_composite_strength'] = (
+    #         features['top_strength'] * features['top_vol_decay'] * features['fractal_decay']).item()
     bi = last_bsp.bi
     pre_bi = last_bsp.bi.pre
     next_bi = last_bsp.bi.next
@@ -1371,24 +1371,24 @@ if __name__ == "__main__":
         # # print(t1_sell_best_num_round)
         # t1_sell_xgb_model.model_tuning(t1_sell_best_params, t1_sell_best_num_round)
         # print("=============T1 sell end ====================")
-        print("=============T1P buy start ====================")
-        new_t1p_bsp_buy_dict =  copy_dict(t1p_bsp_buy_dict, seg)
-
-        save_libsvm_file(chan, new_t1p_bsp_buy_dict, BSP_TYPE.T1P, True,True)
-        t1p_buy_xgb_model = XGB_Model("T1P_buy_",False)
-        t1p_buy_best_params, t1p_buy_best_num_round = t1p_buy_xgb_model.bayyesian_optimize()
-        # t1p_buy_best_params = {'colsample_bytree': 0.3, 'eta': 0.1, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 1.0, 'min_child_weight': 3.0249634705601984, 'reg_alpha': 0.0, 'reg_lambda': 0.0, 'scale_pos_weight': 5.0, 'subsample': 0.5}
-        # t1p_buy_best_num_round = 200
-        t1p_buy_xgb_model.model_tuning(t1p_buy_best_params, t1p_buy_best_num_round)
-        print("=============T1P buy end ====================")
-        # print("=============T1P sell start ====================")
-        # new_t1p_bsp_sell_dict = copy_dict(t1p_bsp_sell_dict, seg)
-        # save_libsvm_file(chan, new_t1p_bsp_sell_dict, BSP_TYPE.T1P, False)
-        # t1p_sell_xgb_model = XGB_Model("T1P_sell_", True)
-        # t1p_sell_best_params,  t1p_buy_best_num_round = t1p_sell_xgb_model.bayyesian_optimize()
-        # #  t1p_sell_best_params =  {'colsample_bytree': 0.3, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 10.0, 'min_child_weight': 6.753938667127704, 'reg_alpha': 0.39482443668774725, 'reg_lambda': 0.0, 'scale_pos_weight': 1.0, 'subsample': 0.5}
-        # #  t1p_buy_best_num_round = 200
-        # t1p_sell_xgb_model.model_tuning(t1p_sell_best_params, t1p_buy_best_num_round)
+        # print("=============T1P buy start ====================")
+        # new_t1p_bsp_buy_dict =  copy_dict(t1p_bsp_buy_dict, seg)
+        #
+        # save_libsvm_file(chan, new_t1p_bsp_buy_dict, BSP_TYPE.T1P, True,True)
+        # t1p_buy_xgb_model = XGB_Model("T1P_buy_",False)
+        # t1p_buy_best_params, t1p_buy_best_num_round = t1p_buy_xgb_model.bayyesian_optimize()
+        # # t1p_buy_best_params = {'colsample_bytree': 0.3, 'eta': 0.1, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 1.0, 'min_child_weight': 3.0249634705601984, 'reg_alpha': 0.0, 'reg_lambda': 0.0, 'scale_pos_weight': 5.0, 'subsample': 0.5}
+        # # t1p_buy_best_num_round = 200
+        # t1p_buy_xgb_model.model_tuning(t1p_buy_best_params, t1p_buy_best_num_round)
+        # print("=============T1P buy end ====================")
+        print("=============T1P sell start ====================")
+        new_t1p_bsp_sell_dict = copy_dict(t1p_bsp_sell_dict, seg)
+        save_libsvm_file(chan, new_t1p_bsp_sell_dict, BSP_TYPE.T1P, False)
+        t1p_sell_xgb_model =  XGB_Model("T1P_sell_",False,'T1P_sell_smote_train.libsvm')
+        t1p_sell_best_params,  t1p_sell_best_num_round = t1p_sell_xgb_model.bayyesian_optimize()
+        #  t1p_sell_best_params =  {'colsample_bytree': 0.3, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 10.0, 'min_child_weight': 6.753938667127704, 'reg_alpha': 0.39482443668774725, 'reg_lambda': 0.0, 'scale_pos_weight': 1.0, 'subsample': 0.5}
+        #  t1p_sell_best_num_round = 200
+        t1p_sell_xgb_model.model_tuning(t1p_sell_best_params, t1p_sell_best_num_round)
         print("=============T1P sell end ====================")
         # print("=============T2 buy start ====================")
         # model_tran(chan, t2_bsp_buy_dict, BSP_TYPE.T2, True,2)
