@@ -857,19 +857,19 @@ def t1p_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
         "adx": dataframe['adx'][index],
         "adxr": dataframe['adxr'][index],
         "bop": dataframe['bop'][index],
-        "cci": dataframe['cci'][index],
+        # "cci": dataframe['cci'][index],
         "cmo": dataframe['cmo'][index],
-        "dx": dataframe['dx'][index],
+        # "dx": dataframe['dx'][index],
 
-        "macd_hist_std": dataframe['macd_hist_std'][index],
+        # "macd_hist_std": dataframe['macd_hist_std'][index],
         "macd_hist_slope": dataframe['macd_hist_slope'][index],
         # "macd_diff": dataframe['macd_diff'][index],
-        "mom": dataframe['mom'][index],
-        "plus_di": dataframe['plus_di'][index],
-        "plus_dm": dataframe['plus_dm'][index],
+        # "mom": dataframe['mom'][index],
+        # "plus_di": dataframe['plus_di'][index],
+        # "plus_dm": dataframe['plus_dm'][index],
         "ppo": dataframe['ppo'][index],
 
-        "rsi": dataframe['rsi'][index],
+        # "rsi": dataframe['rsi'][index],
         "stochf_fastk": dataframe['stochf_fastk'][index],
         "stochrsi_fastk": dataframe['stochrsi_fastk'][index],
         "trix": dataframe['trix'][index],
@@ -880,8 +880,8 @@ def t1p_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
 
         ### 交易量指示器 Volume Indicators ###
 
-        "adosc": dataframe['adosc'][index],
-        "obv": dataframe['obv'][index],
+        # "adosc": dataframe['adosc'][index],
+        # "obv": dataframe['obv'][index],
 
         ### 周期指标 Cycle Indicators ###
         # "ht_dcperiod": dataframe['ht_dcperiod'][index],
@@ -959,9 +959,9 @@ def t1p_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
         "mama": dataframe['mama'][index],
         "fama": dataframe['fama'][index],
         # midpoint
-        "midpoint": dataframe['midpoint'][index],
+        # "midpoint": dataframe['midpoint'][index],
         # midprice
-        "midprice": dataframe['midprice'][index],
+        # "midprice": dataframe['midprice'][index],
         # sar
         # "sar": dataframe['sar'][index],
         # "close_sar_ratio": dataframe['close_sar_ratio'][index],
@@ -980,33 +980,33 @@ def t1p_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
 
         # "sma_99": dataframe['sma_99'][index],
         "close_sma_99_ratio": dataframe['close_sma_99_ratio'][index],
-        "sma_7_99_ratio": dataframe['sma_7_99_ratio'][index],
-        "sma_25_99_ratio": dataframe['sma_25_99_ratio'][index],
+        # "sma_7_99_ratio": dataframe['sma_7_99_ratio'][index],
+        # "sma_25_99_ratio": dataframe['sma_25_99_ratio'][index],
         # tema
         # "tema_7": dataframe['tema_7'][index],
-        # "close_tema_7_ratio": dataframe['close_tema_7_ratio'][index],
+        "close_tema_7_ratio": dataframe['close_tema_7_ratio'][index],
         #
         # "tema_25": dataframe['tema_25'][index],
-        # "close_tema_25_ratio": dataframe['close_tema_25_ratio'][index],
-        # "tema_7_25_ratio": dataframe['tema_7_25_ratio'][index],
+        "close_tema_25_ratio": dataframe['close_tema_25_ratio'][index],
+        "tema_7_25_ratio": dataframe['tema_7_25_ratio'][index],
         #
         # "tema_99": dataframe['tema_99'][index],
-        # "close_tema_99_ratio": dataframe['close_tema_99_ratio'][index],
+        "close_tema_99_ratio": dataframe['close_tema_99_ratio'][index],
         # "tema_7_99_ratio": dataframe['tema_7_99_ratio'][index],
-        # "tema_25_99_ratio": dataframe['tema_25_99_ratio'][index],
-        #
+        "tema_25_99_ratio": dataframe['tema_25_99_ratio'][index],
+
         # # trima
         # "trima_7": dataframe['trima_7'][index],
-        # "close_trima_7_ratio": dataframe['close_trima_7_ratio'][index],
-        #
+        "close_trima_7_ratio": dataframe['close_trima_7_ratio'][index],
+
         # "trima_25": dataframe['trima_25'][index],
-        # "close_trima_25_ratio": dataframe['close_trima_25_ratio'][index],
-        # "trima_7_25_ratio": dataframe['trima_7_25_ratio'][index],
-        #
+        "close_trima_25_ratio": dataframe['close_trima_25_ratio'][index],
+        "trima_7_25_ratio": dataframe['trima_7_25_ratio'][index],
+
         # "trima_99": dataframe['trima_99'][index],
         # "close_trima_99_ratio": dataframe['close_trima_99_ratio'][index],
         # "trima_7_99_ratio": dataframe['trima_7_99_ratio'][index],
-        # "trima_25_99_ratio": dataframe['trima_25_99_ratio'][index],
+        "trima_25_99_ratio": dataframe['trima_25_99_ratio'][index],
 
         # wma
         # "wma_7": dataframe['wma_7'][index],
@@ -1047,9 +1047,9 @@ def t1p_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
     features['bottom_vol_growth'] = dataframe.loc[klu_idx - index + klu_idx:index, ['volume']].apply(
             lambda x: x[klu_idx] / (x.drop(klu_idx).mean()) if (x[klu_idx] < (x.drop(klu_idx).min())) else 1
         ).item()
-    features['fractal_decay'] = np.exp(-0.1 * (index - klu_idx))
-    features['bottom_composite_strength'] = (
-                features['bottom_strength'] * features['bottom_vol_growth'] * features['fractal_decay']).item()
+    # features['fractal_decay'] = np.exp(-0.1 * (index - klu_idx))
+    # features['bottom_composite_strength'] = (
+    #             features['bottom_strength'] * features['bottom_vol_growth'] * features['fractal_decay']).item()
     bi = last_bsp.bi
     pre_bi = last_bsp.bi.pre
     next_bi = last_bsp.bi.next
@@ -1104,7 +1104,7 @@ def split_three_phases(data: Dict[int, T_SAMPLE_INFO], ratios: list = [0.7, 0.15
         return train, val, test
 
 def write_libsvm(file_name: str, dict: Dict[int, T_SAMPLE_INFO], bsp_academy, feature_meta, feature_idx,
-                     plot_marker,selected_feature_names) -> None:
+                     plot_marker,selected_feature_names,filter_by_selected:bool=False) -> None:
     fid = open(file_name, "w")
     positive = 0
     negative = 0
@@ -1116,7 +1116,7 @@ def write_libsvm(file_name: str, dict: Dict[int, T_SAMPLE_INFO], bsp_academy, fe
             negative += 1
         features = []  # List[(idx, value)]
         for feature_name, value in feature_info['feature'].items():
-            # if(feature_name in selected_feature_names):
+            if(not filter_by_selected or feature_name in selected_feature_names):
                 if feature_name not in feature_meta:
                     cur_feature_idx = feature_idx[-1]
                     feature_meta[feature_name] = cur_feature_idx
@@ -1132,7 +1132,7 @@ def write_libsvm(file_name: str, dict: Dict[int, T_SAMPLE_INFO], bsp_academy, fe
     fid.close()
     print(file_name, "正样本", positive, "负样本", negative)
 
-def save_libsvm_file(chan: CChan, bsp_dict: Dict[int, T_SAMPLE_INFO], type: BSP_TYPE, is_buy: bool):
+def save_libsvm_file(chan: CChan, bsp_dict: Dict[int, T_SAMPLE_INFO], type: BSP_TYPE, is_buy: bool,filter_by_selected:bool=False):
     buy_flag = None
     if is_buy:
         buy_flag = 'buy'
@@ -1165,9 +1165,9 @@ def save_libsvm_file(chan: CChan, bsp_dict: Dict[int, T_SAMPLE_INFO], type: BSP_
 
     # 注释范围start
     train_dict, val_dict, test_dict = split_three_phases(bsp_dict)
-    write_libsvm(train_file_name, train_dict, bsp_academy, feature_meta, feature_idx, plot_marker,selected_feature_names)
-    write_libsvm(val_file_name, val_dict, bsp_academy, feature_meta, feature_idx, plot_marker,selected_feature_names)
-    write_libsvm(test_file_name, test_dict, bsp_academy, feature_meta, feature_idx, plot_marker,selected_feature_names)
+    write_libsvm(train_file_name, train_dict, bsp_academy, feature_meta, feature_idx, plot_marker,selected_feature_names,filter_by_selected)
+    write_libsvm(val_file_name, val_dict, bsp_academy, feature_meta, feature_idx, plot_marker,selected_feature_names,filter_by_selected)
+    write_libsvm(test_file_name, test_dict, bsp_academy, feature_meta, feature_idx, plot_marker,selected_feature_names,filter_by_selected)
 
     with open(prifix + "feature.meta", "w") as fid:
         # meta保存下来，实盘预测时特征对齐用
@@ -1348,39 +1348,39 @@ if __name__ == "__main__":
             print("begin klu",bi.get_begin_klu().idx,data_src.get_df().loc[bi.get_begin_klu().idx,'date'])
             bi = bi.pre
 
-        new_t1_bsp_buy_dict =  copy_dict(t1_bsp_buy_dict, seg)
-        print("=============T1 buy start ====================")
-        save_libsvm_file(chan, new_t1_bsp_buy_dict, BSP_TYPE.T1, True)
-        t1_buy_xgb_model = XGB_Model("T1_buy_",False,'T1_buy_smote_train.libsvm')
-        t1_buy_best_params, t1_buy_best_num_round = t1_buy_xgb_model.bayyesian_optimize()
-        # t1_buy_best_params = {'colsample_bytree': 0.4993244980737337, 'eta': 0.7093045290075815, 'gamma': 4.438764086333725, 'learning_rate': 0.10228260817983205, 'max_depth': 3.8535004115778904, 'min_child_weight': 5.278468515999386, 'reg_alpha': 1.905179819449736, 'reg_lambda': 3.178221766051079, 'scale_pos_weight': 4.542969346434627, 'subsample': 0.71274896747512}
-        # t1_buy_best_num_round = 200
-        t1_buy_xgb_model.model_tuning(t1_buy_best_params, t1_buy_best_num_round)
-        print("=============T1 buy end ====================")
-        print("=============T1 sell start ====================")
-        new_t1_bsp_sell_dict = copy_dict(t1_bsp_sell_dict, seg)
-        save_libsvm_file(chan, new_t1_bsp_sell_dict, BSP_TYPE.T1, False)
-        t1_sell_xgb_model = XGB_Model("T1_sell_", False,'T1_sell_smote_tomek_train.libsvm')
-        t1_sell_best_params, t1_sell_best_num_round = t1_sell_xgb_model.bayyesian_optimize()
-        print(t1_sell_best_params)
-        print(t1_sell_best_num_round)
-        # t1_sell_best_params =  {'colsample_bytree': 0.3, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 10.0, 'min_child_weight': 6.753938667127704, 'reg_alpha': 0.39482443668774725, 'reg_lambda': 0.0, 'scale_pos_weight': 1.0, 'subsample': 0.5}
-        # t1_sell_best_params =  {'colsample_bytree': 0.3, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 10.0, 'min_child_weight': 6.753938667127704, 'reg_alpha': 0.39482443668774725, 'reg_lambda': 0.0, 'scale_pos_weight': 1.0, 'subsample': 0.5}
-        # t1_sell_best_num_round = 200
+        # new_t1_bsp_buy_dict =  copy_dict(t1_bsp_buy_dict, seg)
+        # print("=============T1 buy start ====================")
+        # save_libsvm_file(chan, new_t1_bsp_buy_dict, BSP_TYPE.T1, True)
+        # t1_buy_xgb_model = XGB_Model("T1_buy_",False,'T1_buy_smote_train.libsvm')
+        # t1_buy_best_params, t1_buy_best_num_round = t1_buy_xgb_model.bayyesian_optimize()
+        # # t1_buy_best_params = {'colsample_bytree': 0.4993244980737337, 'eta': 0.7093045290075815, 'gamma': 4.438764086333725, 'learning_rate': 0.10228260817983205, 'max_depth': 3.8535004115778904, 'min_child_weight': 5.278468515999386, 'reg_alpha': 1.905179819449736, 'reg_lambda': 3.178221766051079, 'scale_pos_weight': 4.542969346434627, 'subsample': 0.71274896747512}
+        # # t1_buy_best_num_round = 200
+        # t1_buy_xgb_model.model_tuning(t1_buy_best_params, t1_buy_best_num_round)
+        # print("=============T1 buy end ====================")
+        # print("=============T1 sell start ====================")
+        # new_t1_bsp_sell_dict = copy_dict(t1_bsp_sell_dict, seg)
+        # save_libsvm_file(chan, new_t1_bsp_sell_dict, BSP_TYPE.T1, False)
+        # t1_sell_xgb_model = XGB_Model("T1_sell_", False,'T1_sell_smote_tomek_train.libsvm')
+        # t1_sell_best_params, t1_sell_best_num_round = t1_sell_xgb_model.bayyesian_optimize()
         # print(t1_sell_best_params)
         # print(t1_sell_best_num_round)
-        t1_sell_xgb_model.model_tuning(t1_sell_best_params, t1_sell_best_num_round)
-        print("=============T1 sell end ====================")
-        # print("=============T1P buy start ====================")
-        # new_t1p_bsp_buy_dict =  copy_dict(t1_bsp_buy_dict, seg)
-        #
-        # save_libsvm_file(chan, new_t1p_bsp_buy_dict, BSP_TYPE.T1P, True)
-        # t1p_buy_xgb_model = XGB_Model("T1P_buy_",True)
-        # t1p_buy_best_params, t1p_buy_best_num_round = t1p_buy_xgb_model.bayyesian_optimize()
-        # # t1p_buy_best_params = {'colsample_bytree': 0.4993244980737337, 'eta': 0.7093045290075815, 'gamma': 4.438764086333725, 'learning_rate': 0.10228260817983205, 'max_depth': 3.8535004115778904, 'min_child_weight': 5.278468515999386, 'reg_alpha': 1.905179819449736, 'reg_lambda': 3.178221766051079, 'scale_pos_weight': 4.542969346434627, 'subsample': 0.71274896747512}
-        # # t1p_buy_best_num_round = 200
-        # t1p_buy_xgb_model.model_tuning(t1p_buy_best_params, t1p_buy_best_num_round)
-        # print("=============T1P buy end ====================")
+        # # t1_sell_best_params =  {'colsample_bytree': 0.3, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 10.0, 'min_child_weight': 6.753938667127704, 'reg_alpha': 0.39482443668774725, 'reg_lambda': 0.0, 'scale_pos_weight': 1.0, 'subsample': 0.5}
+        # # t1_sell_best_params =  {'colsample_bytree': 0.3, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 10.0, 'min_child_weight': 6.753938667127704, 'reg_alpha': 0.39482443668774725, 'reg_lambda': 0.0, 'scale_pos_weight': 1.0, 'subsample': 0.5}
+        # # t1_sell_best_num_round = 200
+        # # print(t1_sell_best_params)
+        # # print(t1_sell_best_num_round)
+        # t1_sell_xgb_model.model_tuning(t1_sell_best_params, t1_sell_best_num_round)
+        # print("=============T1 sell end ====================")
+        print("=============T1P buy start ====================")
+        new_t1p_bsp_buy_dict =  copy_dict(t1p_bsp_buy_dict, seg)
+
+        save_libsvm_file(chan, new_t1p_bsp_buy_dict, BSP_TYPE.T1P, True,True)
+        t1p_buy_xgb_model = XGB_Model("T1P_buy_",False)
+        t1p_buy_best_params, t1p_buy_best_num_round = t1p_buy_xgb_model.bayyesian_optimize()
+        # t1p_buy_best_params = {'colsample_bytree': 0.3, 'eta': 0.1, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 1.0, 'min_child_weight': 3.0249634705601984, 'reg_alpha': 0.0, 'reg_lambda': 0.0, 'scale_pos_weight': 5.0, 'subsample': 0.5}
+        # t1p_buy_best_num_round = 200
+        t1p_buy_xgb_model.model_tuning(t1p_buy_best_params, t1p_buy_best_num_round)
+        print("=============T1P buy end ====================")
         # print("=============T1P sell start ====================")
         # new_t1p_bsp_sell_dict = copy_dict(t1p_bsp_sell_dict, seg)
         # save_libsvm_file(chan, new_t1p_bsp_sell_dict, BSP_TYPE.T1P, False)
@@ -1389,7 +1389,7 @@ if __name__ == "__main__":
         # #  t1p_sell_best_params =  {'colsample_bytree': 0.3, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 10.0, 'min_child_weight': 6.753938667127704, 'reg_alpha': 0.39482443668774725, 'reg_lambda': 0.0, 'scale_pos_weight': 1.0, 'subsample': 0.5}
         # #  t1p_buy_best_num_round = 200
         # t1p_sell_xgb_model.model_tuning(t1p_sell_best_params, t1p_buy_best_num_round)
-        # print("=============T1P sell end ====================")
+        print("=============T1P sell end ====================")
         # print("=============T2 buy start ====================")
         # model_tran(chan, t2_bsp_buy_dict, BSP_TYPE.T2, True,2)
         # print("=============T2 buy end ====================")
