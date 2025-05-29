@@ -214,7 +214,9 @@ class CBSPointList(Generic[LINE_TYPE, LINE_LIST_TYPE]):
             break_bi = bi_list[0]
         if BSP_CONF.bsp2_follow_1 and (not bsp1_bi or bsp1_bi.idx not in self.bsp_store_flat_dict):
             return
-        bsp1_type = self.bsp_store_flat_dict[bsp1_bi.idx].type
+        # if bsp1_bi and bsp1_bi.idx in self.bsp_store_flat_dict:
+        #     bsp1_type = self.bsp_store_flat_dict[bsp1_bi.idx].type
+
         retrace_rate = bsp2_bi.amp()/break_bi.amp()
         bsp2_flag = retrace_rate <= BSP_CONF.max_bs2_rate
         if bsp2_flag:

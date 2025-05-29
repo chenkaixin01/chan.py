@@ -529,18 +529,18 @@ def t2_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
         ### 动量指标 Momentum Indicators ###
         "adx": dataframe['adx'][index],
         "adxr": dataframe['adxr'][index],
-        "apo": dataframe['apo'][index],
-        "bop": dataframe['bop'][index],
+        # "apo": dataframe['apo'][index],
+        # "bop": dataframe['bop'][index],
         "cci": dataframe['cci'][index],
         "cmo": dataframe['cmo'][index],
-        "dx": dataframe['dx'][index],
+        # "dx": dataframe['dx'][index],
         "macd_hist_std": dataframe['macd_hist_std'][index],
         "macd_hist_slope": dataframe['macd_hist_slope'][index],
         # "macd_diff": dataframe['macd_diff'][index],
-        "mfi": dataframe['mfi'][index],
-        "minus_di": dataframe['minus_di'][index],
-        "minus_dm": dataframe['minus_dm'][index],
-        "mom": dataframe['mom'][index],
+        # "mfi": dataframe['mfi'][index],
+        # "minus_di": dataframe['minus_di'][index],
+        # "minus_dm": dataframe['minus_dm'][index],
+        # "mom": dataframe['mom'][index],
         "plus_di": dataframe['plus_di'][index],
         "plus_dm": dataframe['plus_dm'][index],
         "ppo": dataframe['ppo'][index],
@@ -562,7 +562,7 @@ def t2_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
         "obv": dataframe['obv'][index],
 
         ### 周期指标 Cycle Indicators ###
-        "ht_dcperiod": dataframe['ht_dcperiod'][index],
+        # "ht_dcperiod": dataframe['ht_dcperiod'][index],
         "ht_dcphase": dataframe['ht_dcphase'][index],
 
         # ht_phasor
@@ -589,8 +589,8 @@ def t2_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
         "bb_pct": dataframe['bb_pct'][index],
         "bb_diff_std": dataframe['bb_diff_std'][index],
         "bb_width_pct": dataframe['bb_width_pct'][index],
-        "bb_break_upper": dataframe['bb_break_upper'][index],
-        "bb_break_lower": dataframe['bb_break_lower'][index],
+        # "bb_break_upper": dataframe['bb_break_upper'][index],
+        # "bb_break_lower": dataframe['bb_break_lower'][index],
         "bb_lowerband_slope_5": dataframe['bb_lowerband_slope_5'][index],
         "bb_upperband_slope_5": dataframe['bb_upperband_slope_5'][index],
         "bb_middleband_slope_5": dataframe['bb_middleband_slope_5'][index],
@@ -629,11 +629,11 @@ def t2_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
         "ma_25_99_ratio": dataframe['ma_25_99_ratio'][index],
         "mama": dataframe['mama'][index],
         "fama": dataframe['fama'][index],
-        "midpoint": dataframe['midpoint'][index],
-        "midprice": dataframe['midprice'][index],
+        # "midpoint": dataframe['midpoint'][index],
+        # "midprice": dataframe['midprice'][index],
         # "sar": dataframe['sar'][index],
         "sar_distance": dataframe['sar_distance'][index],
-        "sar_slope_down": dataframe['sar_slope_down'][index],
+        # "sar_slope_down": dataframe['sar_slope_down'][index],
         "sar_slope_up": dataframe['sar_slope_up'][index],
         "close_sma_7_ratio": dataframe['close_sma_7_ratio'][index],
         "close_sma_25_ratio": dataframe['close_sma_25_ratio'][index],
@@ -684,11 +684,11 @@ def t2_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
         features['pre_now_angle_diff'] = features['bi_angle'] - pre_bi_angle
         features['pre_now_high_ratio'] = (bi._high() - pre_bi._high()) / bi._high()
         features['pre_now_low_ratio'] = (bi._low() - pre_bi._low()) / bi._low()
-    bi_momentum_pre = cal_bi_momentum(pre_bi)
-    bi_momentum_curr = cal_bi_momentum(bi)
+    # bi_momentum_pre = cal_bi_momentum(pre_bi)
+    # bi_momentum_curr = cal_bi_momentum(bi)
     # features['bi_momentum_pre'] = bi_momentum_pre
     # features['bi_momentum_curr'] = bi_momentum_curr
-    features['bi_momentum_decay_ratio'] = bi_momentum_curr / bi_momentum_pre
+    # features['bi_momentum_decay_ratio'] = bi_momentum_curr / bi_momentum_pre
     features['bi_volume_decay'] = bi.get_end_klu().volume / bi.get_begin_klu().volume
     return features
 def t2s_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame, index, klu_idx, cur_lv_chan):
@@ -1950,6 +1950,8 @@ if __name__ == "__main__":
             "bi_strict": True,
             "skip_step": 0,
             "divergence_rate": float("inf"),
+            "bsp2_follow_1": False,
+            "bsp3_follow_1": False,
             "min_zs_cnt": 0,
             "bs1_peak": False,
             "macd_algo": "peak",
@@ -2067,7 +2069,7 @@ if __name__ == "__main__":
                         t2_bsp_sell_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp2_", last_bsp.features)
                         t2_bsp_feats = t2_sell_stragety_feature(klu, last_bsp, data_src.get_df(), index,
                                                                last_bsp.klu.idx, cur_lv_chan)
-                        t2_bsp_sell_dict[last_bsp.klu.idx]['feature'].add_feat(bsp_feats)
+                        t2_bsp_sell_dict[last_bsp.klu.idx]['feature'].add_feat(t2_bsp_feats)
                 if (BSP_TYPE.T2S in last_bsp.type) and last_bsp.bi.pre:
                     if last_bsp.is_buy:
                         t2s_bsp_buy_dict[last_bsp.klu.idx] = {
@@ -2078,16 +2080,16 @@ if __name__ == "__main__":
                         t2s_bsp_buy_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp2s_", last_bsp.features)
                         t2s_bsp_feats = t2s_buy_stragety_feature(klu, last_bsp, data_src.get_df(), index,
                                                                last_bsp.klu.idx, cur_lv_chan)
-                        t2s_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(t2_bsp_feats)
+                        t2s_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(t2s_bsp_feats)
                     else:
                         t2s_bsp_sell_dict[last_bsp.klu.idx] = {
                             "is_buy": last_bsp.is_buy,
                             "open_time": klu.time,
                         }
                         t2s_bsp_sell_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp2s_", last_bsp.features)
-                        t2_bsp_feats = t2s_sell_stragety_feature(klu, last_bsp, data_src.get_df(), index,
+                        t2s_bsp_feats = t2s_sell_stragety_feature(klu, last_bsp, data_src.get_df(), index,
                                                                 last_bsp.klu.idx, cur_lv_chan)
-                        t2s_bsp_sell_dict[last_bsp.klu.idx]['feature'].add_feat(bsp_feats)                # print(last_bsp.klu.time, last_bsp.is_buy)
+                        t2s_bsp_sell_dict[last_bsp.klu.idx]['feature'].add_feat(t2s_bsp_feats)                # print(last_bsp.klu.time, last_bsp.is_buy)
 
         seg = chan[0].seg_list[-1]
         while not seg.is_sure:
@@ -2144,24 +2146,22 @@ if __name__ == "__main__":
         # #  t1p_sell_best_num_round = 200
         # t1p_sell_xgb_model.model_tuning(t1p_sell_best_params, t1p_sell_best_num_round)
         # print("=============T1P sell end ====================")
-        print("=============T2 buy start ====================")
-        new_t2_bsp_buy_dict = copy_dict(t2_bsp_buy_dict, seg)
-        save_libsvm_file(chan, new_t2_bsp_buy_dict, BSP_TYPE.T2, True,True)
-        t2_buy_xgb_model =XGB_Model("T2_buy_",False,'T2_buy_smote_tomek_train.libsvm')
-        t2_buy_best_params, t2_buy_best_num_round = t2_buy_xgb_model.bayyesian_optimize()
-        #  t2_buy_best_params =  {'colsample_bytree': 0.3, 'eta': 1.0, 'gamma': 2.3361078333865444, 'learning_rate': 0.01, 'max_depth': 2.6007596291367006, 'min_child_weight': 10.0, 'reg_alpha': 5.0, 'reg_lambda': 5.0, 'scale_pos_weight': 5.0, 'subsample': 0.5}
-        #  t2_buy_best_num_round = 200
-        t2_buy_xgb_model.model_tuning(t2_buy_best_params, t2_buy_best_num_round)
-        print("=============T2 buy end ====================")
-        # print("=============T2 sell start ====================")
-        # new_t2_bsp_sell_dict = copy_dict(t2_bsp_sell_dict, seg)
-        # save_libsvm_file(chan, new_t2_bsp_sell_dict, BSP_TYPE.T2, False)
-        # t2_sell_xgb_model = XGB_Model("T2_sell_", True)
-        # t2_sell_best_params, t2_sell_best_num_round = t2_sell_xgb_model.bayyesian_optimize()
-        # #  t2_sell_best_params =  {'colsample_bytree': 0.3, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 10.0, 'min_child_weight': 6.753938667127704, 'reg_alpha': 0.39482443668774725, 'reg_lambda': 0.0, 'scale_pos_weight': 1.0, 'subsample': 0.5}
-        # #  t2_sell_best_num_round = 200
-        # t2_sell_xgb_model.model_tuning(t2_sell_best_params, t2_sell_best_num_round)
-        # print("=============T2 sell end ====================")
+        # print("=============T2 buy start ====================")
+        # new_t2_bsp_buy_dict = copy_dict(t2_bsp_buy_dict, seg)
+        # save_libsvm_file(chan, new_t2_bsp_buy_dict, BSP_TYPE.T2, True,True)
+        # t2_buy_xgb_model =XGB_Model("T2_buy_",False,'T2_buy_smote_tomek_train.libsvm')
+        # t2_buy_best_params, t2_buy_best_num_round = t2_buy_xgb_model.bayyesian_optimize()
+        # t2_buy_xgb_model.model_tuning(t2_buy_best_params, t2_buy_best_num_round)
+        # print("=============T2 buy end ====================")
+        print("=============T2 sell start ====================")
+        new_t2_bsp_sell_dict = copy_dict(t2_bsp_sell_dict, seg)
+        save_libsvm_file(chan, new_t2_bsp_sell_dict, BSP_TYPE.T2, False,True)
+        t2_sell_xgb_model =XGB_Model("T2_sell_",False)
+        t2_sell_best_params, t2_sell_best_num_round = t2_sell_xgb_model.bayyesian_optimize()
+        #  t2_sell_best_params =  {'colsample_bytree': 0.3, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 10.0, 'min_child_weight': 6.753938667127704, 'reg_alpha': 0.39482443668774725, 'reg_lambda': 0.0, 'scale_pos_weight': 1.0, 'subsample': 0.5}
+        #  t2_sell_best_num_round = 200
+        t2_sell_xgb_model.model_tuning(t2_sell_best_params, t2_sell_best_num_round)
+        print("=============T2 sell end ====================")
         # print("=============T2S buy start ====================")
         # new_t2s_bsp_buy_dict = copy_dict(t2s_bsp_buy_dict, seg)
         # save_libsvm_file(chan, new_t2s_bsp_buy_dict, BSP_TYPE.T2S, True)

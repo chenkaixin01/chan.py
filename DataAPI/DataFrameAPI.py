@@ -87,10 +87,7 @@ class DataFrameAPI(CCommonStockApi):
         # 趋势类
         df['volume_slope_14'] = ta.LINEARREG_SLOPE(df['volume'], 14)
         df['vol_close_slope_div'] = df['volume_slope_14'] * df['close_slope_14']
-
         # 高频变化类
-        df['volume_pct_5'] = df['volume'].pct_change(periods=5)
-        df['vol_close_pct_div'] = df['close_pct_5'] * df['volume_pct_5']
         df["vol_ma5"] = df["volume"].rolling(5).mean()
         df["vol_ma10"] = df["volume"].rolling(10).mean()
         df["vol_ratio"] = df["volume"] / df["vol_ma10"]
@@ -510,6 +507,9 @@ class DataFrameAPI(CCommonStockApi):
         last_na_all = stacked[stacked.isna()].index[-1]
         print(f"全局最后一个NaN的索引：{last_na_all}")
         self.dataframe = df.iloc[last_na_all[0] + 1:].reset_index(drop=True)
+        self.dataframe['volume_safe'] = self.dataframe['volume'].replace(0, np.nan)
+        self.dataframe['volume_pct_5'] = self.dataframe['volume_safe'].pct_change(periods=5)
+        self.dataframe['vol_close_pct_div'] = self.dataframe['close_pct_5'] * self.dataframe['volume_pct_5']
 
     def get_df(self):
         return self.dataframe
