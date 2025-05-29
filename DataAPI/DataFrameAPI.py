@@ -91,9 +91,11 @@ class DataFrameAPI(CCommonStockApi):
         # 高频变化类
         df['volume_pct_5'] = df['volume'].pct_change(periods=5)
         df['vol_close_pct_div'] = df['close_pct_5'] * df['volume_pct_5']
+        df["vol_ma5"] = df["volume"].rolling(5).mean()
+        df["vol_ma10"] = df["volume"].rolling(10).mean()
+        df["vol_ratio"] = df["volume"] / df["vol_ma10"]
 
         # 动量类
-
         volume_mom = ta.MOM(df['volume'], 10)
         df['volume_mom_10'] = ta.MOM(df['volume'], 10)
         df['vol_close_mom_div'] = df['volume_mom_10'] * df['close_mom_10']

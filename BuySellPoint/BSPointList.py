@@ -189,6 +189,10 @@ class CBSPointList(Generic[LINE_TYPE, LINE_LIST_TYPE]):
             self.treat_bsp2(seg, seg_list, bi_list)
 
     def treat_bsp2(self, seg: CSeg, seg_list: CSegListComm[LINE_TYPE], bi_list: LINE_LIST_TYPE):
+        zs_str = '没有中枢'
+        has_zs = False
+        bsp1_type = '空'
+        zs_end_klu_idx = -1
         if len(seg_list) > 1:
             BSP_CONF = self.config.GetBSConfig(seg.is_down())
             bsp1_bi = seg.end_bi
@@ -197,6 +201,10 @@ class CBSPointList(Generic[LINE_TYPE, LINE_LIST_TYPE]):
                 return
             break_bi = bi_list[bsp1_bi.idx + 1]
             bsp2_bi = bi_list[bsp1_bi.idx + 2]
+            if len(seg.zs_lst) > 0:
+                zs_end_klu_idx = seg.zs_lst[-1].end_bi.get_end_klu().idx
+                zs_str = '有中枢'
+                has_zs = True
         else:
             BSP_CONF = self.config.GetBSConfig(seg.is_up())
             bsp1_bi, real_bsp1 = None, None
@@ -206,14 +214,25 @@ class CBSPointList(Generic[LINE_TYPE, LINE_LIST_TYPE]):
             break_bi = bi_list[0]
         if BSP_CONF.bsp2_follow_1 and (not bsp1_bi or bsp1_bi.idx not in self.bsp_store_flat_dict):
             return
+        bsp1_type = self.bsp_store_flat_dict[bsp1_bi.idx].type
         retrace_rate = bsp2_bi.amp()/break_bi.amp()
         bsp2_flag = retrace_rate <= BSP_CONF.max_bs2_rate
         if bsp2_flag:
             feature_dict = {
                 'bsp2_retrace_rate': retrace_rate,
-                'bsp2_break_bi_amp': break_bi.amp(),
-                'bsp2_bi_amp': bsp2_bi.amp(),
+                'bsp2_has_zs': 0
+                # 'bsp2_break_bi_amp': break_bi.amp(),
+                # 'bsp2_bi_amp': bsp2_bi.amp(),
             }
+            if has_zs:
+                zs_mid = seg.zs_lst[-1].mid
+                zs_height = seg.zs_lst[-1].high - seg.zs_lst[-1].low
+                zs_position = ((bsp2_bi.get_end_klu().close - zs_mid) / zs_height)
+                zs_position = max(zs_position, -2)
+                zs_position = min(zs_position, 2)
+                feature_dict['bsp2_zs_position'] = zs_position
+                feature_dict['bsp2_has_zs'] = 1
+            # print('treat_bsp2',bsp2_bi.get_end_klu().idx,bsp2_bi.get_end_klu().time,len(seg_list),zs_str, zs_end_klu_idx,bsp1_type,bsp1_bi.get_end_klu().idx)
             self.add_bs(bs_type=BSP_TYPE.T2, bi=bsp2_bi, relate_bsp1=real_bsp1, feature_dict=feature_dict)  # type: ignore
         elif BSP_CONF.bsp2s_follow_2:
             return

@@ -167,8 +167,9 @@ class XGB_Model:
         print("Accuracy:", accuracy_score(y_true, y_pred_labels))
         print("\nClassification Report:\n", classification_report(y_true, y_pred_labels))
 if __name__ == "__main__":
-
-    xgb_model = XGB_Model("T1P_sell_",False,'T1P_sell_smote_train.libsvm')
+    #  'T2_buy_smote_tomek_train.libsvm'
+    # filter 'T2_buy_smote_tomek_train.libsvm'
+    xgb_model = XGB_Model("T2_buy_",False,'T2_buy_smote_tomek_train.libsvm')
     best_params, best_num_round = xgb_model.bayyesian_optimize()
     # best_params = {'colsample_bytree': 1.0, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 4.281075764518275, 'min_child_weight': 2.2218856933808704, 'reg_alpha': 1.329714275909306, 'reg_lambda': 4.5304365393107355, 'scale_pos_weight': 1.0, 'subsample': 0.5}
     xgb_model.model_tuning(best_params,best_num_round)
