@@ -240,10 +240,11 @@ class CBSPointList(Generic[LINE_TYPE, LINE_LIST_TYPE]):
             return
         if BSP_TYPE.T2S not in self.config.GetBSConfig(seg.is_down()).target_types:
             return
-        self.treat_bsp2s(seg_list, bi_list, bsp2_bi, break_bi, real_bsp1, BSP_CONF)  # type: ignore
+        self.treat_bsp2s(seg,seg_list, bi_list, bsp2_bi, break_bi, real_bsp1, BSP_CONF)  # type: ignore
 
     def treat_bsp2s(
         self,
+        seg:CSeg,
         seg_list: CSegListComm,
         bi_list: LINE_LIST_TYPE,
         bsp2_bi: LINE_TYPE,
@@ -275,10 +276,18 @@ class CBSPointList(Generic[LINE_TYPE, LINE_LIST_TYPE]):
                 break
             feature_dict = {
                 'bsp2s_retrace_rate': retrace_rate,
-                'bsp2s_break_bi_amp': break_bi.amp(),
-                'bsp2s_bi_amp': bsp2s_bi.amp(),
+                # 'bsp2s_break_bi_amp': break_bi.amp(),
+                # 'bsp2s_bi_amp': bsp2s_bi.amp(),
                 'bsp2s_lv': bias/2,
             }
+            if seg and len(seg.zs_lst) > 0:
+                zs_mid = seg.zs_lst[-1].mid
+                zs_height = seg.zs_lst[-1].high - seg.zs_lst[-1].low
+                zs_position = ((bsp2_bi.get_end_klu().close - zs_mid) / zs_height)
+                zs_position = max(zs_position, -2)
+                zs_position = min(zs_position, 2)
+                feature_dict['bsp2s_zs_position'] = zs_position
+                feature_dict['bsp2s_has_zs'] = 1
             self.add_bs(bs_type=BSP_TYPE.T2S, bi=bsp2s_bi, relate_bsp1=real_bsp1, feature_dict=feature_dict)  # type: ignore
             bias += 2
 

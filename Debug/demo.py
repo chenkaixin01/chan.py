@@ -22,9 +22,9 @@ def partial_correlation(shap_df, y_target):
 if __name__ == "__main__":
     feature_meta = {}
 
-    meta = json.load(open("T2_sell_feature.meta", "r"))
+    meta = json.load(open("T2S_buy_feature.meta", "r"))
     model = xgb.XGBClassifier()
-    model.load_model("T2_sell_model.json")
+    model.load_model("T2S_buy_model.json")
     # predict
     importances = model.feature_importances_
     # print(importances)
@@ -40,9 +40,9 @@ if __name__ == "__main__":
     importances_keys = [k for k, v in meta.items() if v in features_index]
     print("importances_keys", importances_keys)
 
-    X_train, y_train = load_svmlight_file("T2_sell_train.libsvm")
-    X_val, y_val = load_svmlight_file("T2_sell_val.libsvm")
-    X_test, y_test = load_svmlight_file("T2_sell_test.libsvm")
+    X_train, y_train = load_svmlight_file("T2S_buy_train.libsvm")
+    X_val, y_val = load_svmlight_file("T2S_buy_val.libsvm")
+    X_test, y_test = load_svmlight_file("T2S_buy_test.libsvm")
 
     explainer = shap.TreeExplainer(model)
     shap_train = explainer.shap_values(X_train)

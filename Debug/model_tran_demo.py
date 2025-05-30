@@ -3,7 +3,7 @@ from sklearn.datasets import load_svmlight_file
 from sklearn.metrics import roc_auc_score, average_precision_score,accuracy_score, classification_report, roc_curve, auc
 import matplotlib.pyplot as pyplot
 from bayes_opt import BayesianOptimization
-
+import numpy as np
 
 class XGB_Model:
     def __init__(self, prifix,is_cv:bool=True,train_file_name:str=None):
@@ -18,6 +18,10 @@ class XGB_Model:
         self.dval = xgb.DMatrix(self.val_file_name + "?format=libsvm")  # load sample
         self.dtest = xgb.DMatrix(self.test_file_name + "?format=libsvm")  # load sample
         self.is_cv = is_cv
+        self.best_model = None  # 全局变量保存最优模型
+        self.best_score = -np.inf
+        self.evals_result = {}
+        self.best_iteration = 300
 
     def xgb_evaluate(seft, max_depth, eta, gamma, colsample_bytree, learning_rate, min_child_weight, scale_pos_weight,
                      subsample, reg_lambda, reg_alpha):
@@ -47,19 +51,40 @@ class XGB_Model:
                 seed=42,
                 verbose_eval=False
             )
-            return cv_result["test-auc-mean"].max()
+            score = cv_result["test-auc-mean"].max()
+            if score > seft.best_score:  # 更新最优模型
+                evals_result = {}
+                model = xgb.train(
+                    params,
+                    seft.dtrain,
+                    num_boost_round=300,
+                    evals=[(seft.dtrain, "train"), (seft.dval, "eval")],
+                    evals_result=evals_result,
+                    early_stopping_rounds=50,
+                    verbose_eval=False
+                )
+                seft.best_model = model
+                seft.best_score = score
+                seft.evals_result = evals_result
+                seft.best_iteration = model.best_iteration
+            return score
         else:
+            evals_result = {}
             model = xgb.train(
                 params,
                 seft.dtrain,
                 num_boost_round=300,
                 evals=[(seft.dtrain, "train"), (seft.dval, "eval")],
+                evals_result=evals_result,
                 early_stopping_rounds=50,
                 verbose_eval=False
             )
-            preds = model.predict(seft.dval)
-            auc = roc_auc_score(seft.dval.get_label(), preds)
-            return auc
+            if model.best_score > seft.best_score:  # 更新最优模型
+                seft.best_model = model
+                seft.best_score = model.best_score
+                seft.evals_result = evals_result
+                seft.best_iteration = model.best_iteration
+            return model.best_score
 
     def bayyesian_optimize(self):
         # 设置超参数空间
@@ -90,53 +115,16 @@ class XGB_Model:
         )
 
         # 输出最优结果
-        # print("Best result:", optimizer.max)
+        print("Best result:", optimizer.max)
 
-        # 获取最优超参数
-        best_params = optimizer.max['params']
-        # best_params = {'colsample_bytree': 1.0, 'eta': 0.1, 'gamma': 0.0, 'learning_rate': 0.3, 'max_depth': 3.0,
-        #                'min_child_weight': 4.615155109848909, 'reg_alpha': 2.134236173880166, 'reg_lambda': 5.0,
-        #                'scale_pos_weight': 5.0, 'subsample': 1.0}
-        best_params['max_depth'] = int(best_params['max_depth'])
-        best_params['min_child_weight'] = int(best_params['min_child_weight'])
 
-        # 👇 获取最佳轮数（用 xgb.cv 再跑一次，为了拿到 best_iteration）
-        cv_result = xgb.cv(
-            best_params,
-            self.dtrain,
-            num_boost_round=200,
-            nfold=5,
-            stratified=True,
-            early_stopping_rounds=50,
-            seed=42,
-            verbose_eval=False
-        )
-        best_num_round = cv_result.shape[0]  # 最优轮数 = best_iteration
-        print("Best params: ", optimizer.max)
-        print("Best num_round: ", best_num_round)
-        return best_params, best_num_round
+    def model_tuning(self):
+        evals_result = self.evals_result
 
-    def model_tuning(self,params,num_round):
-        evals_result = {}
-        params = params
-        params['device'] = 'cuda'
-        params['tree_method'] = 'hist'
-        params['objective'] = 'binary:logistic'
-        params['eval_metric'] = 'auc'
-        params['max_depth'] = int(params['max_depth'])
-        bst = xgb.train(
-            params,
-            self.dtrain,
-            num_boost_round=num_round,
-            evals=[(self.dtrain, "train"), (self.dval, "val")],
-            early_stopping_rounds=10,
-            evals_result=evals_result,
-            verbose_eval=True
-        )
         # 绘制学习曲线
         pyplot.figure(figsize=(10, 6))
         pyplot.plot(evals_result['train']['auc'], label='Train AUC')
-        pyplot.plot(evals_result['val']['auc'], label='Validation AUC')
+        pyplot.plot(evals_result['eval']['auc'], label='Validation AUC')
         pyplot.xlabel('Boosting Rounds')
         pyplot.ylabel('AUC')
         pyplot.title('Training Progress with Early Stopping')
@@ -144,10 +132,14 @@ class XGB_Model:
         pyplot.grid(True)
         pyplot.savefig(self.prifix + "model.jpg")
 
+        bst = self.best_model
+
         bst.save_model(self.prifix + "model.json")
         # load model
         model = xgb.Booster()
         model.load_model(self.prifix + "model.json")
+
+        print(self.best_iteration,model.best_iteration,model.best_score)
 
         # 测试集评估
         y_pred = model.predict(self.dtest, iteration_range=(0, model.best_iteration + 1))
@@ -169,7 +161,7 @@ class XGB_Model:
 if __name__ == "__main__":
     #  'T2_buy_smote_tomek_train.libsvm'
     # filter 'T2_buy_smote_tomek_train.libsvm'
-    xgb_model = XGB_Model("T2_sell_",False)
-    best_params, best_num_round = xgb_model.bayyesian_optimize()
+    xgb_model = XGB_Model("T2S_buy_",False,'T2S_buy_smote_tomek_train.libsvm')
+    xgb_model.bayyesian_optimize()
     # best_params = {'colsample_bytree': 1.0, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 4.281075764518275, 'min_child_weight': 2.2218856933808704, 'reg_alpha': 1.329714275909306, 'reg_lambda': 4.5304365393107355, 'scale_pos_weight': 1.0, 'subsample': 0.5}
-    xgb_model.model_tuning(best_params,best_num_round)
+    xgb_model.model_tuning()
