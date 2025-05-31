@@ -1,7 +1,6 @@
 import json
 from typing import Dict, TypedDict
 
-import xgboost as xgb
 import torch
 
 from Chan import CChan
@@ -14,19 +13,19 @@ from chan.DataAPI.DataFrameAPI import DataFrameAPI
 import pandas as pd
 from pandas import DataFrame
 from Common.CEnum import BSP_TYPE
-import matplotlib.pyplot as pyplot
-from sklearn.metrics import roc_auc_score, average_precision_score,accuracy_score, classification_report, roc_curve, auc
 import copy
 import numpy as np
 from BuySellPoint.BS_Point import CBS_Point
 from sklearn.datasets import dump_svmlight_file
 from sklearn.datasets import load_svmlight_file
-from imblearn.combine import SMOTEENN,SMOTETomek
+from imblearn.combine import SMOTEENN, SMOTETomek
 from imblearn.over_sampling import SMOTE
 from imblearn.under_sampling import EditedNearestNeighbours
-from tsfresh import extract_features,select_features
+from tsfresh import select_features
 from ZS.ZS import CZS
 from model_tran_demo import XGB_Model
+from pathlib import Path
+
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
 
@@ -36,7 +35,7 @@ class T_SAMPLE_INFO(TypedDict):
     open_time: CTime
 
 
-def plot(chan, plot_marker,type,is_buy):
+def plot(chan, plot_marker, type, is_buy):
     plot_config = {
         "plot_kline": True,
         "plot_bi": True,
@@ -65,6 +64,7 @@ def plot(chan, plot_marker,type,is_buy):
             plot_driver.save2img(type.name + "_" + "sell" + "_" + "label.png")
     else:
         plot_driver.save2img("label.png")
+
 
 def new_stragety_feature(last_klu, dataframe: DataFrame, index):
     return {
@@ -337,12 +337,13 @@ def t1_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
     # features['bi_momentum_curr'] = bi_momentum_curr
     # features['bi_momentum_decay_ratio'] = bi_momentum_curr / bi_momentum_pre
     # features['bi_volume_decay'] = bi.get_end_klu().volume / bi.get_begin_klu().volume
-    cal_zh_feature(cur_lv_chan.zs_list[-1], dataframe, features,last_klu)
+    cal_zh_feature(cur_lv_chan.zs_list[-1], dataframe, features, last_klu)
     bi_in_macd_area, bi_out_macd_area, macd_area_ratio = cal_zs_in_out_bi_macd_area(cur_lv_chan.zs_list[-1], dataframe)
     # features['bi_in_macd_area'] = bi_in_macd_area
     # features['bi_out_macd_area'] = bi_out_macd_area
     features['macd_area_ratio'] = macd_area_ratio
     return features
+
 
 def t1p_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame, index, klu_idx, cur_lv_chan):
     features = {
@@ -691,6 +692,8 @@ def t2_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
     # features['bi_momentum_decay_ratio'] = bi_momentum_curr / bi_momentum_pre
     features['bi_volume_decay'] = bi.get_end_klu().volume / bi.get_begin_klu().volume
     return features
+
+
 def t2s_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame, index, klu_idx, cur_lv_chan):
     features = {
         ### 动量指标 Momentum Indicators ###
@@ -863,6 +866,7 @@ def t2s_sell_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFram
 def cal_bi_angle(begin_close, end_close, length):
     return np.arctan((begin_close - end_close) / length) * 180 / np.pi
 
+
 def cal_bi_momentum(bi):
     bi_last_klu_idx = bi.get_end_klu().idx
     bi_klu_idx = bi.get_begin_klu().idx
@@ -881,15 +885,19 @@ def cal_bi_momentum(bi):
         klc = klc.next
     return (max_high - min_low) * volume_sum
 
-def cal_zs_in_out_bi_macd_area(zs:CZS,dataframe:pd.DataFrame):
+
+def cal_zs_in_out_bi_macd_area(zs: CZS, dataframe: pd.DataFrame):
     bi_in = zs.bi_in
     bi_out = zs.bi_out
-    bi_in_macd_area = dataframe.iloc[bi_in.get_begin_klu().idx:bi_in.get_end_klu().idx + 1]['macdhist'].abs().sum().item()
-    bi_out_macd_area = dataframe.iloc[bi_out.get_begin_klu().idx:bi_out.get_end_klu().idx + 1]['macdhist'].abs().sum().item()
+    bi_in_macd_area = dataframe.iloc[bi_in.get_begin_klu().idx:bi_in.get_end_klu().idx + 1][
+        'macdhist'].abs().sum().item()
+    bi_out_macd_area = dataframe.iloc[bi_out.get_begin_klu().idx:bi_out.get_end_klu().idx + 1][
+        'macdhist'].abs().sum().item()
     macd_area_ratio = bi_out_macd_area / bi_in_macd_area
-    return bi_in_macd_area,bi_out_macd_area,macd_area_ratio
+    return bi_in_macd_area, bi_out_macd_area, macd_area_ratio
 
-def cal_zh_feature(zs,dataframe:pd.DataFrame,features,last_klu):
+
+def cal_zh_feature(zs, dataframe: pd.DataFrame, features, last_klu):
     # 中枢上沿
     zs_upper_edge = zs.high
     # 中枢下沿
@@ -923,6 +931,7 @@ def cal_zh_feature(zs,dataframe:pd.DataFrame,features,last_klu):
     features['zs_out_volume_ratio'] = zs_out_volume_ratio
     features['zs_downward_price_coeff'] = zs_downward_price_coeff
     features['zs_out_atr_ratio'] = zs_out_atr_ratio
+
 
 def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame, index, klu_idx, cur_lv_chan):
     features = {
@@ -1094,48 +1103,48 @@ def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
         # "wma_7_99_ratio": dataframe['wma_7_99_ratio'][index],
         # "wma_25_99_ratio": dataframe['wma_25_99_ratio'][index],
         "open_klu_rate": (last_klu.close - last_klu.open) / last_klu.open,
-        "close_slope_5":  dataframe['close_slope_5'][index],
-        "close_slope_14":  dataframe['close_slope_14'][index],
-        "close_pct_5":  dataframe['close_pct_5'][index],
-        "close_mom_10":  dataframe['close_mom_10'][index],
-        "volume_slope_14":  dataframe['volume_slope_14'][index],
-        "vol_close_slope_div":  dataframe['vol_close_slope_div'][index],
-        "volume_pct_5":  dataframe['volume_pct_5'][index],
-        "vol_close_pct_div":  dataframe['vol_close_pct_div'][index],
-        "volume_mom_10":  dataframe['volume_mom_10'][index],
-        "vol_close_mom_div":  dataframe['vol_close_mom_div'][index],
-        "rsi_slope_14":  dataframe['rsi_slope_14'][index],
-        "rsi_slope_5":  dataframe['rsi_slope_5'][index],
-        "rsi_divergence_5":  dataframe['rsi_divergence_5'][index],
-        "rsi_divergence_14":  dataframe['rsi_divergence_14'][index],
+        "close_slope_5": dataframe['close_slope_5'][index],
+        "close_slope_14": dataframe['close_slope_14'][index],
+        "close_pct_5": dataframe['close_pct_5'][index],
+        "close_mom_10": dataframe['close_mom_10'][index],
+        "volume_slope_14": dataframe['volume_slope_14'][index],
+        "vol_close_slope_div": dataframe['vol_close_slope_div'][index],
+        "volume_pct_5": dataframe['volume_pct_5'][index],
+        "vol_close_pct_div": dataframe['vol_close_pct_div'][index],
+        "volume_mom_10": dataframe['volume_mom_10'][index],
+        "vol_close_mom_div": dataframe['vol_close_mom_div'][index],
+        "rsi_slope_14": dataframe['rsi_slope_14'][index],
+        "rsi_slope_5": dataframe['rsi_slope_5'][index],
+        "rsi_divergence_5": dataframe['rsi_divergence_5'][index],
+        "rsi_divergence_14": dataframe['rsi_divergence_14'][index],
 
     }
     features['bottom_strength'] = dataframe.loc[klu_idx - index + klu_idx:index, ['low']].apply(
-            lambda x: (x.drop(klu_idx).min() - x[klu_idx]) / x[klu_idx]
-            if (x[klu_idx] < x.drop(klu_idx).min())
-            else 0
-        ).item()
+        lambda x: (x.drop(klu_idx).min() - x[klu_idx]) / x[klu_idx]
+        if (x[klu_idx] < x.drop(klu_idx).min())
+        else 0
+    ).item()
 
-        # 底分型成交量放大因子
+    # 底分型成交量放大因子
     features['bottom_vol_growth'] = dataframe.loc[klu_idx - index + klu_idx:index, ['volume']].apply(
-            lambda x: x[klu_idx] / (x.drop(klu_idx).mean()) if (x[klu_idx] < (x.drop(klu_idx).min())) else 1
-        ).item()
+        lambda x: x[klu_idx] / (x.drop(klu_idx).mean()) if (x[klu_idx] < (x.drop(klu_idx).min())) else 1
+    ).item()
     features['fractal_decay'] = np.exp(-0.1 * (index - klu_idx))
     features['bottom_composite_strength'] = (
-                features['bottom_strength'] * features['bottom_vol_growth'] * features['fractal_decay']).item()
+            features['bottom_strength'] * features['bottom_vol_growth'] * features['fractal_decay']).item()
     bi = last_bsp.bi
     pre_bi = last_bsp.bi.pre
     next_bi = last_bsp.bi.next
     features['bi_angle'] = cal_bi_angle(bi.get_begin_klu().close, bi.get_end_klu().close,
-                                            bi.get_end_klu().idx - bi.get_begin_klu().idx)
+                                        bi.get_end_klu().idx - bi.get_begin_klu().idx)
     bi_height = (bi._high() - bi._low())
     bi_height_ratio = bi_height / (bi.get_begin_klu().open)
     features['bi_height_ratio'] = bi_height_ratio
     if pre_bi:
         features['pre_bi_angle'] = cal_bi_angle(pre_bi.get_begin_klu().close, pre_bi.get_end_klu().close,
-                                                    pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
+                                                pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
         pre_bi_angle = cal_bi_angle(pre_bi.get_begin_klu().close, pre_bi.get_end_klu().close,
-                                                    pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
+                                    pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
         features['pre_now_angle_diff'] = features['bi_angle'] - pre_bi_angle
         bi_height = (bi._high() - bi._low())
         bi_height_ratio = bi_height / (bi.get_begin_klu().open)
@@ -1149,7 +1158,7 @@ def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
     # features['bi_momentum_curr'] = bi_momentum_curr
     features['bi_momentum_decay_ratio'] = bi_momentum_curr / bi_momentum_pre
     features['bi_volume_decay'] = bi.get_end_klu().volume / bi.get_begin_klu().volume
-    cal_zh_feature(cur_lv_chan.zs_list[-1],dataframe, features,last_klu)
+    cal_zh_feature(cur_lv_chan.zs_list[-1], dataframe, features, last_klu)
     # zs = cur_lv_chan.zs_list[-1]
     # # 中枢上沿
     # zs_upper_edge = zs.high
@@ -1184,11 +1193,13 @@ def t1_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
     # features['zs_downward_price_coeff'] = zs_downward_price_coeff
     # features['zs_out_atr_ratio'] = zs_out_atr_ratio
 
-    bi_in_macd_area,bi_out_macd_area,macd_area_ratio = cal_zs_in_out_bi_macd_area(cur_lv_chan.zs_list[-1],dataframe)
+    bi_in_macd_area, bi_out_macd_area, macd_area_ratio = cal_zs_in_out_bi_macd_area(cur_lv_chan.zs_list[-1], dataframe)
     # features['bi_in_macd_area'] = bi_in_macd_area
     # features['bi_out_macd_area'] = bi_out_macd_area
     features['macd_area_ratio'] = macd_area_ratio
     return features
+
+
 def t1p_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame, index, klu_idx, cur_lv_chan):
     features = {
         ### 动量指标 Momentum Indicators ###
@@ -1290,45 +1301,45 @@ def t1p_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
         "trima_25_99_ratio": dataframe['trima_25_99_ratio'][index],
 
         "open_klu_rate": (last_klu.close - last_klu.open) / last_klu.open,
-        "close_slope_5":  dataframe['close_slope_5'][index],
-        "close_slope_14":  dataframe['close_slope_14'][index],
-        "close_pct_5":  dataframe['close_pct_5'][index],
-        "close_mom_10":  dataframe['close_mom_10'][index],
-        "volume_slope_14":  dataframe['volume_slope_14'][index],
-        "vol_close_slope_div":  dataframe['vol_close_slope_div'][index],
-        "volume_pct_5":  dataframe['volume_pct_5'][index],
-        "vol_close_pct_div":  dataframe['vol_close_pct_div'][index],
-        "volume_mom_10":  dataframe['volume_mom_10'][index],
-        "vol_close_mom_div":  dataframe['vol_close_mom_div'][index],
-        "rsi_slope_14":  dataframe['rsi_slope_14'][index],
-        "rsi_slope_5":  dataframe['rsi_slope_5'][index],
-        "rsi_divergence_5":  dataframe['rsi_divergence_5'][index],
-        "rsi_divergence_14":  dataframe['rsi_divergence_14'][index],
+        "close_slope_5": dataframe['close_slope_5'][index],
+        "close_slope_14": dataframe['close_slope_14'][index],
+        "close_pct_5": dataframe['close_pct_5'][index],
+        "close_mom_10": dataframe['close_mom_10'][index],
+        "volume_slope_14": dataframe['volume_slope_14'][index],
+        "vol_close_slope_div": dataframe['vol_close_slope_div'][index],
+        "volume_pct_5": dataframe['volume_pct_5'][index],
+        "vol_close_pct_div": dataframe['vol_close_pct_div'][index],
+        "volume_mom_10": dataframe['volume_mom_10'][index],
+        "vol_close_mom_div": dataframe['vol_close_mom_div'][index],
+        "rsi_slope_14": dataframe['rsi_slope_14'][index],
+        "rsi_slope_5": dataframe['rsi_slope_5'][index],
+        "rsi_divergence_5": dataframe['rsi_divergence_5'][index],
+        "rsi_divergence_14": dataframe['rsi_divergence_14'][index],
 
     }
     features['bottom_strength'] = dataframe.loc[klu_idx - index + klu_idx:index, ['low']].apply(
-            lambda x: (x.drop(klu_idx).min() - x[klu_idx]) / x[klu_idx]
-            if (x[klu_idx] < x.drop(klu_idx).min())
-            else 0
-        ).item()
+        lambda x: (x.drop(klu_idx).min() - x[klu_idx]) / x[klu_idx]
+        if (x[klu_idx] < x.drop(klu_idx).min())
+        else 0
+    ).item()
 
-        # 底分型成交量放大因子
+    # 底分型成交量放大因子
     features['bottom_vol_growth'] = dataframe.loc[klu_idx - index + klu_idx:index, ['volume']].apply(
-            lambda x: x[klu_idx] / (x.drop(klu_idx).mean()) if (x[klu_idx] < (x.drop(klu_idx).min())) else 1
-        ).item()
+        lambda x: x[klu_idx] / (x.drop(klu_idx).mean()) if (x[klu_idx] < (x.drop(klu_idx).min())) else 1
+    ).item()
     bi = last_bsp.bi
     pre_bi = last_bsp.bi.pre
     next_bi = last_bsp.bi.next
     features['bi_angle'] = cal_bi_angle(bi.get_begin_klu().close, bi.get_end_klu().close,
-                                            bi.get_end_klu().idx - bi.get_begin_klu().idx)
+                                        bi.get_end_klu().idx - bi.get_begin_klu().idx)
     bi_height = (bi._high() - bi._low())
     bi_height_ratio = bi_height / (bi.get_begin_klu().open)
     features['bi_height_ratio'] = bi_height_ratio
     if pre_bi:
         features['pre_bi_angle'] = cal_bi_angle(pre_bi.get_begin_klu().close, pre_bi.get_end_klu().close,
-                                                    pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
+                                                pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
         pre_bi_angle = cal_bi_angle(pre_bi.get_begin_klu().close, pre_bi.get_end_klu().close,
-                                                    pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
+                                    pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
         features['pre_now_angle_diff'] = features['bi_angle'] - pre_bi_angle
         bi_height = (bi._high() - bi._low())
         bi_height_ratio = bi_height / (bi.get_begin_klu().open)
@@ -1341,6 +1352,8 @@ def t1p_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
     features['bi_momentum_decay_ratio'] = bi_momentum_curr / bi_momentum_pre
     features['bi_volume_decay'] = bi.get_end_klu().volume / bi.get_begin_klu().volume
     return features
+
+
 def t2_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame, index, klu_idx, cur_lv_chan):
     features = {
         ### 动量指标 Momentum Indicators ###
@@ -1521,34 +1534,34 @@ def t2_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
         # "wma_7_99_ratio": dataframe['wma_7_99_ratio'][index],
         # "wma_25_99_ratio": dataframe['wma_25_99_ratio'][index],
         "open_klu_rate": (last_klu.close - last_klu.open) / last_klu.open,
-        "close_slope_5":  dataframe['close_slope_5'][index],
-        "close_slope_14":  dataframe['close_slope_14'][index],
-        "close_pct_5":  dataframe['close_pct_5'][index],
-        "close_mom_10":  dataframe['close_mom_10'][index],
-        "volume_slope_14":  dataframe['volume_slope_14'][index],
-        "vol_close_slope_div":  dataframe['vol_close_slope_div'][index],
-        "volume_pct_5":  dataframe['volume_pct_5'][index],
-        "vol_close_pct_div":  dataframe['vol_close_pct_div'][index],
-        "vol_ma5":  dataframe['vol_ma5'][index],
-        "vol_ma10":  dataframe['vol_ma10'][index],
-        "vol_ratio":  dataframe['vol_ratio'][index],
-        "volume_mom_10":  dataframe['volume_mom_10'][index],
-        "vol_close_mom_div":  dataframe['vol_close_mom_div'][index],
-        "rsi_slope_14":  dataframe['rsi_slope_14'][index],
-        "rsi_slope_5":  dataframe['rsi_slope_5'][index],
-        "rsi_divergence_5":  dataframe['rsi_divergence_5'][index],
-        "rsi_divergence_14":  dataframe['rsi_divergence_14'][index],
+        "close_slope_5": dataframe['close_slope_5'][index],
+        "close_slope_14": dataframe['close_slope_14'][index],
+        "close_pct_5": dataframe['close_pct_5'][index],
+        "close_mom_10": dataframe['close_mom_10'][index],
+        "volume_slope_14": dataframe['volume_slope_14'][index],
+        "vol_close_slope_div": dataframe['vol_close_slope_div'][index],
+        "volume_pct_5": dataframe['volume_pct_5'][index],
+        "vol_close_pct_div": dataframe['vol_close_pct_div'][index],
+        "vol_ma5": dataframe['vol_ma5'][index],
+        "vol_ma10": dataframe['vol_ma10'][index],
+        "vol_ratio": dataframe['vol_ratio'][index],
+        "volume_mom_10": dataframe['volume_mom_10'][index],
+        "vol_close_mom_div": dataframe['vol_close_mom_div'][index],
+        "rsi_slope_14": dataframe['rsi_slope_14'][index],
+        "rsi_slope_5": dataframe['rsi_slope_5'][index],
+        "rsi_divergence_5": dataframe['rsi_divergence_5'][index],
+        "rsi_divergence_14": dataframe['rsi_divergence_14'][index],
     }
     features['bottom_strength'] = dataframe.loc[klu_idx - index + klu_idx:index, ['low']].apply(
-            lambda x: (x.drop(klu_idx).min() - x[klu_idx]) / x[klu_idx]
-            if (x[klu_idx] < x.drop(klu_idx).min())
-            else 0
-        ).item()
+        lambda x: (x.drop(klu_idx).min() - x[klu_idx]) / x[klu_idx]
+        if (x[klu_idx] < x.drop(klu_idx).min())
+        else 0
+    ).item()
 
-        # 底分型成交量放大因子
+    # 底分型成交量放大因子
     features['bottom_vol_growth'] = dataframe.loc[klu_idx - index + klu_idx:index, ['volume']].apply(
-            lambda x: x[klu_idx] / (x.drop(klu_idx).mean()) if (x[klu_idx] < (x.drop(klu_idx).min())) else 1
-        ).item()
+        lambda x: x[klu_idx] / (x.drop(klu_idx).mean()) if (x[klu_idx] < (x.drop(klu_idx).min())) else 1
+    ).item()
     # features['fractal_decay'] = np.exp(-0.1 * (index - klu_idx))
     # features['bottom_composite_strength'] = (
     #             features['bottom_strength'] * features['bottom_vol_growth'] * features['fractal_decay']).item()
@@ -1556,15 +1569,15 @@ def t2_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
     pre_bi = last_bsp.bi.pre
     next_bi = last_bsp.bi.next
     features['bi_angle'] = cal_bi_angle(bi.get_begin_klu().close, bi.get_end_klu().close,
-                                            bi.get_end_klu().idx - bi.get_begin_klu().idx)
+                                        bi.get_end_klu().idx - bi.get_begin_klu().idx)
     bi_height = (bi._high() - bi._low())
     bi_height_ratio = bi_height / (bi.get_begin_klu().open)
     features['bi_height_ratio'] = bi_height_ratio
     if pre_bi:
         features['pre_bi_angle'] = cal_bi_angle(pre_bi.get_begin_klu().close, pre_bi.get_end_klu().close,
-                                                    pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
+                                                pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
         pre_bi_angle = cal_bi_angle(pre_bi.get_begin_klu().close, pre_bi.get_end_klu().close,
-                                                    pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
+                                    pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
         features['pre_now_angle_diff'] = features['bi_angle'] - pre_bi_angle
         bi_height = (bi._high() - bi._low())
         bi_height_ratio = bi_height / (bi.get_begin_klu().open)
@@ -1580,6 +1593,8 @@ def t2_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame,
     features['bi_volume_decay'] = bi.get_end_klu().volume / bi.get_begin_klu().volume
 
     return features
+
+
 def t2s_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame, index, klu_idx, cur_lv_chan):
     features = {
         ### 动量指标 Momentum Indicators ###
@@ -1753,32 +1768,32 @@ def t2s_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
         # "wma_7_99_ratio": dataframe['wma_7_99_ratio'][index],
         # "wma_25_99_ratio": dataframe['wma_25_99_ratio'][index],
         "open_klu_rate": (last_klu.close - last_klu.open) / last_klu.open,
-        "close_slope_5":  dataframe['close_slope_5'][index],
-        "close_slope_14":  dataframe['close_slope_14'][index],
-        "close_pct_5":  dataframe['close_pct_5'][index],
-        "close_mom_10":  dataframe['close_mom_10'][index],
-        "volume_slope_14":  dataframe['volume_slope_14'][index],
-        "vol_close_slope_div":  dataframe['vol_close_slope_div'][index],
-        "volume_pct_5":  dataframe['volume_pct_5'][index],
-        "vol_close_pct_div":  dataframe['vol_close_pct_div'][index],
-        "volume_mom_10":  dataframe['volume_mom_10'][index],
-        "vol_close_mom_div":  dataframe['vol_close_mom_div'][index],
-        "rsi_slope_14":  dataframe['rsi_slope_14'][index],
-        "rsi_slope_5":  dataframe['rsi_slope_5'][index],
-        "rsi_divergence_5":  dataframe['rsi_divergence_5'][index],
-        "rsi_divergence_14":  dataframe['rsi_divergence_14'][index],
+        "close_slope_5": dataframe['close_slope_5'][index],
+        "close_slope_14": dataframe['close_slope_14'][index],
+        "close_pct_5": dataframe['close_pct_5'][index],
+        "close_mom_10": dataframe['close_mom_10'][index],
+        "volume_slope_14": dataframe['volume_slope_14'][index],
+        "vol_close_slope_div": dataframe['vol_close_slope_div'][index],
+        "volume_pct_5": dataframe['volume_pct_5'][index],
+        "vol_close_pct_div": dataframe['vol_close_pct_div'][index],
+        "volume_mom_10": dataframe['volume_mom_10'][index],
+        "vol_close_mom_div": dataframe['vol_close_mom_div'][index],
+        "rsi_slope_14": dataframe['rsi_slope_14'][index],
+        "rsi_slope_5": dataframe['rsi_slope_5'][index],
+        "rsi_divergence_5": dataframe['rsi_divergence_5'][index],
+        "rsi_divergence_14": dataframe['rsi_divergence_14'][index],
 
     }
     features['bottom_strength'] = dataframe.loc[klu_idx - index + klu_idx:index, ['low']].apply(
-            lambda x: (x.drop(klu_idx).min() - x[klu_idx]) / x[klu_idx]
-            if (x[klu_idx] < x.drop(klu_idx).min())
-            else 0
-        ).item()
+        lambda x: (x.drop(klu_idx).min() - x[klu_idx]) / x[klu_idx]
+        if (x[klu_idx] < x.drop(klu_idx).min())
+        else 0
+    ).item()
 
-        # 底分型成交量放大因子
+    # 底分型成交量放大因子
     features['bottom_vol_growth'] = dataframe.loc[klu_idx - index + klu_idx:index, ['volume']].apply(
-            lambda x: x[klu_idx] / (x.drop(klu_idx).mean()) if (x[klu_idx] < (x.drop(klu_idx).min())) else 1
-        ).item()
+        lambda x: x[klu_idx] / (x.drop(klu_idx).mean()) if (x[klu_idx] < (x.drop(klu_idx).min())) else 1
+    ).item()
     # features['fractal_decay'] = np.exp(-0.1 * (index - klu_idx))
     # features['bottom_composite_strength'] = (
     #             features['bottom_strength'] * features['bottom_vol_growth'] * features['fractal_decay']).item()
@@ -1786,15 +1801,15 @@ def t2s_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
     pre_bi = last_bsp.bi.pre
     next_bi = last_bsp.bi.next
     features['bi_angle'] = cal_bi_angle(bi.get_begin_klu().close, bi.get_end_klu().close,
-                                            bi.get_end_klu().idx - bi.get_begin_klu().idx)
+                                        bi.get_end_klu().idx - bi.get_begin_klu().idx)
     bi_height = (bi._high() - bi._low())
     bi_height_ratio = bi_height / (bi.get_begin_klu().open)
     features['bi_height_ratio'] = bi_height_ratio
     if pre_bi:
         features['pre_bi_angle'] = cal_bi_angle(pre_bi.get_begin_klu().close, pre_bi.get_end_klu().close,
-                                                    pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
+                                                pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
         pre_bi_angle = cal_bi_angle(pre_bi.get_begin_klu().close, pre_bi.get_end_klu().close,
-                                                    pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
+                                    pre_bi.get_end_klu().idx - pre_bi.get_begin_klu().idx)
         features['pre_now_angle_diff'] = features['bi_angle'] - pre_bi_angle
         bi_height = (pre_bi._high() - pre_bi._low())
         # pre_bi_height_ratio = bi_height / (bi.get_begin_klu().open)
@@ -1811,28 +1826,31 @@ def t2s_buy_stragety_feature(last_klu, last_bsp: CBS_Point, dataframe: DataFrame
 
     return features
 
+
 def stragety_feature(last_klu):
     return {
-            "open_klu_rate": (last_klu.close - last_klu.open) / last_klu.open,
-        }
+        "open_klu_rate": (last_klu.close - last_klu.open) / last_klu.open,
+    }
+
 
 def split_three_phases(data: Dict[int, T_SAMPLE_INFO], ratios: list = [0.7, 0.15, 0.15]) -> tuple:
-        keys = list(data.keys())
+    keys = list(data.keys())
 
-        total = len(keys)
-        # 计算分割点，确保总和不超过100%
-        split1 = int(total * ratios[0])
-        split2 = split1 + int(total * ratios[1])
+    total = len(keys)
+    # 计算分割点，确保总和不超过100%
+    split1 = int(total * ratios[0])
+    split2 = split1 + int(total * ratios[1])
 
-        # 三段数据划分
-        train = {k: data[k] for k in keys[:split1]}
-        val = {k: data[k] for k in keys[split1:split2]}
-        test = {k: data[k] for k in keys[split2:]}
+    # 三段数据划分
+    train = {k: data[k] for k in keys[:split1]}
+    val = {k: data[k] for k in keys[split1:split2]}
+    test = {k: data[k] for k in keys[split2:]}
 
-        return train, val, test
+    return train, val, test
+
 
 def write_libsvm(file_name: str, dict: Dict[int, T_SAMPLE_INFO], bsp_academy, feature_meta, feature_idx,
-                     plot_marker,selected_feature_names,filter_by_selected:bool=False) -> None:
+                 plot_marker, selected_feature_names, filter_by_selected: bool = False) -> None:
     fid = open(file_name, "w")
     positive = 0
     negative = 0
@@ -1844,13 +1862,12 @@ def write_libsvm(file_name: str, dict: Dict[int, T_SAMPLE_INFO], bsp_academy, fe
             negative += 1
         features = []  # List[(idx, value)]
         for feature_name, value in feature_info['feature'].items():
-            if(not filter_by_selected or feature_name in selected_feature_names):
+            if (not filter_by_selected or feature_name in selected_feature_names):
                 if feature_name not in feature_meta:
                     cur_feature_idx = feature_idx[-1]
                     feature_meta[feature_name] = cur_feature_idx
                     feature_idx.append(cur_feature_idx + 1)
                 features.append((feature_meta[feature_name], value))
-
 
         features.sort(key=lambda x: x[0])
         feature_str = " ".join([f"{idx}:{value}" for idx, value in features])
@@ -1860,13 +1877,22 @@ def write_libsvm(file_name: str, dict: Dict[int, T_SAMPLE_INFO], bsp_academy, fe
     fid.close()
     print(file_name, "正样本", positive, "负样本", negative)
 
-def save_libsvm_file(chan: CChan, bsp_dict: Dict[int, T_SAMPLE_INFO], type: BSP_TYPE, is_buy: bool,filter_by_selected:bool=False):
+dir_path = 'E:\\data\\BTC\\'
+def save_libsvm_file(chan: CChan, bsp_dict: Dict[int, T_SAMPLE_INFO], type: BSP_TYPE, is_buy: bool,
+                     filter_by_selected: bool = False):
     buy_flag = None
     if is_buy:
         buy_flag = 'buy'
     else:
         buy_flag = 'sell'
-    prifix = type.name + "_" + buy_flag + "_"
+    path = dir_path + type.name + "_" + buy_flag + "\\"
+    folder_path = Path(path)
+    folder_path.mkdir(parents=True, exist_ok=True)
+    selected_path = dir_path + type.name + "_" + buy_flag + "_selected\\"
+    selected_folder_path = Path(selected_path)
+    selected_folder_path.mkdir(parents=True, exist_ok=True)
+    prifix = path + type.name + "_" + buy_flag + "_"
+    prifix_selected = selected_path + type.name + "_" + buy_flag + "_selected_"
     # 生成libsvm样本特征
     bsp_academy = [bsp.klu.idx for bsp in chan.get_bsp()]
     bsp_feature = []
@@ -1883,304 +1909,324 @@ def save_libsvm_file(chan: CChan, bsp_dict: Dict[int, T_SAMPLE_INFO], type: BSP_
     bsp_y = pd.Series(bsp_label, name='target')
     selected = select_features(bsp_df, bsp_y)
     selected_feature_names = selected.columns.tolist()
-    for name in selected_feature_names:
-        print(name)
+    # for name in selected_feature_names:
+    #     print(name)
     feature_meta = {}  # 特征meta
+    selected_feature_meta = {}  # 特征meta
     feature_idx = [0]
+    selected_feature_idx = [0]
     plot_marker = {}
     train_file_name = prifix + "train.libsvm"
     val_file_name = prifix + "val.libsvm"
     test_file_name = prifix + "test.libsvm"
+    train_selected_file_name = prifix_selected + "train.libsvm"
+    val_selected_file_name = prifix_selected + "val.libsvm"
+    test_selected_file_name = prifix_selected + "test.libsvm"
 
     # 注释范围start
     train_dict, val_dict, test_dict = split_three_phases(bsp_dict)
-    write_libsvm(train_file_name, train_dict, bsp_academy, feature_meta, feature_idx, plot_marker,selected_feature_names,filter_by_selected)
-    write_libsvm(val_file_name, val_dict, bsp_academy, feature_meta, feature_idx, plot_marker,selected_feature_names,filter_by_selected)
-    write_libsvm(test_file_name, test_dict, bsp_academy, feature_meta, feature_idx, plot_marker,selected_feature_names,filter_by_selected)
+    write_libsvm(train_file_name, train_dict, bsp_academy, feature_meta, feature_idx, plot_marker,
+                 selected_feature_names, False)
+    write_libsvm(val_file_name, val_dict, bsp_academy, feature_meta, feature_idx, plot_marker, selected_feature_names,
+                 False)
+    write_libsvm(test_file_name, test_dict, bsp_academy, feature_meta, feature_idx, plot_marker, selected_feature_names,
+                 False)
+    write_libsvm(train_selected_file_name, train_dict, bsp_academy, selected_feature_meta, selected_feature_idx, plot_marker,
+                 selected_feature_names, True)
+    write_libsvm(val_selected_file_name, val_dict, bsp_academy, selected_feature_meta, selected_feature_idx, plot_marker, selected_feature_names,
+                 True)
+    write_libsvm(test_selected_file_name, test_dict, bsp_academy, selected_feature_meta, selected_feature_idx, plot_marker, selected_feature_names,
+                 True)
 
     with open(prifix + "feature.meta", "w") as fid:
         # meta保存下来，实盘预测时特征对齐用
         fid.write(json.dumps(feature_meta))
-    X_train, y_train = load_svmlight_file(train_file_name)
-    X_val, y_val = load_svmlight_file(val_file_name)
-    X_test, y_test = load_svmlight_file(train_file_name)
-    X_train = X_train.toarray()
+
+    with open(prifix_selected + "feature.meta", "w") as fid:
+        # meta保存下来，实盘预测时特征对齐用
+        fid.write(json.dumps(selected_feature_meta))
+
     smote = SMOTE(random_state=42)  # 不要100%平衡
     enn = EditedNearestNeighbours(n_neighbors=3)
     smote_enn = SMOTEENN(smote=smote, enn=enn)
     smote_tomek = SMOTETomek(random_state=42)
-
+    X_train, y_train = load_svmlight_file(train_file_name)
+    X_train = X_train.toarray()
     X_somteenn_resampled, y_somteenn_resampled = smote_enn.fit_resample(X_train, y_train)
     X_smote_tomek_resampled, y_smote_tomek_resampled = smote.fit_resample(X_train, y_train)
     X_smote_resampled, y_smote_resampled = smote_tomek.fit_resample(X_train, y_train)
     dump_svmlight_file(X_somteenn_resampled, y_somteenn_resampled, prifix + "somteenn_train.libsvm")
     dump_svmlight_file(X_smote_tomek_resampled, y_smote_tomek_resampled, prifix + "smote_tomek_train.libsvm")
     dump_svmlight_file(X_smote_resampled, y_smote_resampled, prifix + "smote_train.libsvm")
+
+    X_selected_train, y_selected_train = load_svmlight_file(train_selected_file_name)
+    X_selected_train = X_selected_train.toarray()
+    X_selected__somteenn_resampled, y_selected__somteenn_resampled = smote_enn.fit_resample(X_selected_train, y_selected_train)
+    X_selected__smote_tomek_resampled, y_selected__smote_tomek_resampled = smote.fit_resample(X_selected_train, y_selected_train)
+    X_selected__smote_resampled, y_selected__smote_resampled = smote_tomek.fit_resample(X_selected_train, y_selected_train)
+    dump_svmlight_file(X_selected__somteenn_resampled, y_selected__somteenn_resampled, prifix_selected + "somteenn_train.libsvm")
+    dump_svmlight_file(X_selected__smote_tomek_resampled, y_selected__smote_tomek_resampled, prifix_selected + "smote_tomek_train.libsvm")
+    dump_svmlight_file(X_selected__smote_resampled, y_selected__smote_resampled, prifix_selected + "smote_train.libsvm")
+
+
     # 画图检查label是否正确
     # plot(chan, plot_marker, type, is_buy)
 
-def copy_dict(t1_bsp_buy_dict,seg):
+
+def copy_dict(t1_bsp_buy_dict, seg):
     new_t1_bsp_buy_dict: Dict[int, T_SAMPLE_INFO] = {}
     for bsp_klu_idx, feature_info in t1_bsp_buy_dict.items():
         if bsp_klu_idx <= seg.get_end_klu().idx:
             new_t1_bsp_buy_dict[bsp_klu_idx] = feature_info
     return new_t1_bsp_buy_dict
 
-def copy_features(prifix,features):
+
+def copy_features(prifix, features):
     feature_dict = {}
     for feature_name, value in last_bsp.features.items():
         if feature_name.startswith(prifix):
             feature_dict[feature_name] = value
     return CFeatures(feature_dict)
 
+
 if __name__ == "__main__":
-        """
-        本demo主要演示如何记录策略产出的买卖点的特征
-        然后将这些特征作为样本，训练一个模型(以XGB为demo)
-        用于预测买卖点的准确性
-        
-        请注意，demo训练预测都用的是同一份数据，这是不合理的，仅仅是为了演示
-        """
-        code = "sz.000001"
-        begin_time = "2018-01-01"
-        end_time = None
-        data_src = DATA_SRC.BAO_STOCK
-        chan_kl_type = KL_TYPE.K_15M
-        lv_list = [chan_kl_type]
-        print(device)
-        config = CChanConfig({
-            "trigger_step": True,  # 打开开关！
-            "bi_strict": True,
-            "skip_step": 0,
-            "divergence_rate": float("inf"),
-            "bsp2_follow_1": False,
-            "bsp3_follow_1": False,
-            "min_zs_cnt": 0,
-            "bs1_peak": False,
-            "macd_algo": "peak",
-            "bs_type": '1,2,1p,2s',
-            "print_warning": True,
-            "zs_algo": "normal",
-        })
+    """
+    本demo主要演示如何记录策略产出的买卖点的特征
+    然后将这些特征作为样本，训练一个模型(以XGB为demo)
+    用于预测买卖点的准确性
+    
+    请注意，demo训练预测都用的是同一份数据，这是不合理的，仅仅是为了演示
+    """
+    code = "sz.000001"
+    begin_time = "2018-01-01"
+    end_time = None
+    data_src = DATA_SRC.BAO_STOCK
+    chan_kl_type = KL_TYPE.K_15M
+    lv_list = [chan_kl_type]
+    print(device)
+    config = CChanConfig({
+        "trigger_step": True,  # 打开开关！
+        "bi_strict": True,
+        "skip_step": 0,
+        "divergence_rate": float("inf"),
+        "bsp2_follow_1": False,
+        "bsp3_follow_1": False,
+        "min_zs_cnt": 0,
+        "bs1_peak": False,
+        "macd_algo": "peak",
+        "bs_type": '1,2,1p,2s',
+        "print_warning": True,
+        "zs_algo": "normal",
+    })
 
-        chan = CChan(
-            code=code,
-            lv_list=lv_list,
-            config=config,
-        )
-        DataFrameAPI.do_init()
-        data_src = DataFrameAPI(code, k_type=chan_kl_type, begin_date=begin_time, end_date=end_time,
-                                autype=AUTYPE.QFQ)  # 初始化数据源类
-        bsp_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的bsp的特征
-        t1_bsp_buy_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的一类买点bsp的特征
-        t1p_bsp_buy_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的一类买点bsp的特征
-        t1_bsp_sell_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的一类卖点bsp的特征
-        t1p_bsp_sell_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的一类卖点bsp的特征
-        t2_bsp_buy_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的一类买点bsp的特征
-        t2_bsp_sell_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的一类卖点bsp的特征
-        t2s_bsp_buy_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的一类买点bsp的特征
-        t2s_bsp_sell_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的一类卖点bsp的特征
-        index = -1
+    chan = CChan(
+        code=code,
+        lv_list=lv_list,
+        config=config,
+    )
+    DataFrameAPI.do_init()
+    data_src = DataFrameAPI(code, k_type=chan_kl_type, begin_date=begin_time, end_date=end_time,
+                            autype=AUTYPE.QFQ)  # 初始化数据源类
+    bsp_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的bsp的特征
+    t1_bsp_buy_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的一类买点bsp的特征
+    t1p_bsp_buy_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的一类买点bsp的特征
+    t1_bsp_sell_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的一类卖点bsp的特征
+    t1p_bsp_sell_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的一类卖点bsp的特征
+    t2_bsp_buy_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的一类买点bsp的特征
+    t2_bsp_sell_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的一类卖点bsp的特征
+    t2s_bsp_buy_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的一类买点bsp的特征
+    t2s_bsp_sell_dict: Dict[int, T_SAMPLE_INFO] = {}  # 存储策略产出的一类卖点bsp的特征
+    index = -1
 
-        # 跑策略，保存买卖点的特征
-        print("跑策略，保存买卖点的特征")
+    # 跑策略，保存买卖点的特征
+    print("跑策略，保存买卖点的特征")
 
-        for klu in data_src.get_kl_data():
-            index = index + 1
-            chan.trigger_load({chan_kl_type: [klu]})
-            bsp_list = chan.get_bsp()
-            if not bsp_list:
-                continue
-            last_bsp = bsp_list[-1]
+    for klu in data_src.get_kl_data():
+        index = index + 1
+        chan.trigger_load({chan_kl_type: [klu]})
+        bsp_list = chan.get_bsp()
+        if not bsp_list:
+            continue
+        last_bsp = bsp_list[-1]
 
-            cur_lv_chan = chan[0]
-            # (BSP_TYPE.T1 not in bsp_list[-1].type and BSP_TYPE.T1P not in bsp_list[-1].type)
+        cur_lv_chan = chan[0]
+        # (BSP_TYPE.T1 not in bsp_list[-1].type and BSP_TYPE.T1P not in bsp_list[-1].type)
 
-            if last_bsp.klu.idx not in bsp_dict and cur_lv_chan[-2].idx == last_bsp.klu.klc.idx:
-                bsp_dict[last_bsp.klu.idx] = {
-                    "feature": copy.deepcopy(last_bsp.features),
-                    "is_buy": last_bsp.is_buy,
-                    "open_time": klu.time,
-                }
-                bsp_feats = new_stragety_feature(klu, data_src.get_df(), index)
-                bsp_dict[last_bsp.klu.idx]['feature'].add_feat(bsp_feats)  # 开仓K线特征
-                # if (BSP_TYPE.T1 in last_bsp.type or BSP_TYPE.T1P in last_bsp.type) and last_bsp.bi.pre:
-                if (BSP_TYPE.T1 in last_bsp.type) and last_bsp.bi.pre:
-                    if last_bsp.is_buy:
-                        t1_bsp_buy_dict[last_bsp.klu.idx] = {
-                            "feature": CFeatures(),
-                            "is_buy": last_bsp.is_buy,
-                            "open_time": klu.time,
-                        }
-                        t1_bsp_buy_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp1_",last_bsp.features)
-                        t1_bsp_feats = t1_buy_stragety_feature(klu, last_bsp, data_src.get_df(), index,
-                                                               last_bsp.klu.idx, cur_lv_chan)
-                        t1_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(t1_bsp_feats)
-                        # t1_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(bsp_feats)
-                    else:
-                        t1_bsp_sell_dict[last_bsp.klu.idx] = {
-                            "is_buy": last_bsp.is_buy,
-                            "open_time": klu.time,
-                        }
-                        t1_bsp_sell_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp1_", last_bsp.features)
-                        t1_bsp_feats = t1_sell_stragety_feature(klu, last_bsp, data_src.get_df(), index,
-                                                               last_bsp.klu.idx, cur_lv_chan)
-                        t1_bsp_sell_dict[last_bsp.klu.idx]['feature'].add_feat(t1_bsp_feats)
+        if last_bsp.klu.idx not in bsp_dict and cur_lv_chan[-2].idx == last_bsp.klu.klc.idx:
+            bsp_dict[last_bsp.klu.idx] = {
+                "feature": copy.deepcopy(last_bsp.features),
+                "is_buy": last_bsp.is_buy,
+                "open_time": klu.time,
+            }
+            bsp_feats = new_stragety_feature(klu, data_src.get_df(), index)
+            bsp_dict[last_bsp.klu.idx]['feature'].add_feat(bsp_feats)  # 开仓K线特征
+            # if (BSP_TYPE.T1 in last_bsp.type or BSP_TYPE.T1P in last_bsp.type) and last_bsp.bi.pre:
+            if (BSP_TYPE.T1 in last_bsp.type) and last_bsp.bi.pre:
+                if last_bsp.is_buy:
+                    t1_bsp_buy_dict[last_bsp.klu.idx] = {
+                        "feature": CFeatures(),
+                        "is_buy": last_bsp.is_buy,
+                        "open_time": klu.time,
+                    }
+                    t1_bsp_buy_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp1_", last_bsp.features)
+                    t1_bsp_feats = t1_buy_stragety_feature(klu, last_bsp, data_src.get_df(), index,
+                                                           last_bsp.klu.idx, cur_lv_chan)
+                    t1_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(t1_bsp_feats)
+                    # t1_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(bsp_feats)
+                else:
+                    t1_bsp_sell_dict[last_bsp.klu.idx] = {
+                        "is_buy": last_bsp.is_buy,
+                        "open_time": klu.time,
+                    }
+                    t1_bsp_sell_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp1_", last_bsp.features)
+                    t1_bsp_feats = t1_sell_stragety_feature(klu, last_bsp, data_src.get_df(), index,
+                                                            last_bsp.klu.idx, cur_lv_chan)
+                    t1_bsp_sell_dict[last_bsp.klu.idx]['feature'].add_feat(t1_bsp_feats)
 
-                if (BSP_TYPE.T1P in last_bsp.type) and last_bsp.bi.pre:
-                    if last_bsp.is_buy:
-                        t1p_bsp_buy_dict[last_bsp.klu.idx] = {
-                            "feature": CFeatures(),
-                            "is_buy": last_bsp.is_buy,
-                            "open_time": klu.time,
-                        }
-                        t1p_bsp_buy_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp1p_",last_bsp.features)
-                        t1p_bsp_feats = t1p_buy_stragety_feature(klu, last_bsp, data_src.get_df(), index,
-                                                               last_bsp.klu.idx, cur_lv_chan)
-                        t1p_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(t1p_bsp_feats)
-                        # t1_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(bsp_feats)
-                    else:
-                        t1p_bsp_sell_dict[last_bsp.klu.idx] = {
-                            "is_buy": last_bsp.is_buy,
-                            "open_time": klu.time,
-                        }
-                        t1p_bsp_sell_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp1p_", last_bsp.features)
-                        t1p_bsp_feats = t1p_sell_stragety_feature(klu, last_bsp, data_src.get_df(), index,
-                                                               last_bsp.klu.idx, cur_lv_chan)
-                        t1p_bsp_sell_dict[last_bsp.klu.idx]['feature'].add_feat(t1p_bsp_feats)
+            if (BSP_TYPE.T1P in last_bsp.type) and last_bsp.bi.pre:
+                if last_bsp.is_buy:
+                    t1p_bsp_buy_dict[last_bsp.klu.idx] = {
+                        "feature": CFeatures(),
+                        "is_buy": last_bsp.is_buy,
+                        "open_time": klu.time,
+                    }
+                    t1p_bsp_buy_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp1p_", last_bsp.features)
+                    t1p_bsp_feats = t1p_buy_stragety_feature(klu, last_bsp, data_src.get_df(), index,
+                                                             last_bsp.klu.idx, cur_lv_chan)
+                    t1p_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(t1p_bsp_feats)
+                    # t1_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(bsp_feats)
+                else:
+                    t1p_bsp_sell_dict[last_bsp.klu.idx] = {
+                        "is_buy": last_bsp.is_buy,
+                        "open_time": klu.time,
+                    }
+                    t1p_bsp_sell_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp1p_", last_bsp.features)
+                    t1p_bsp_feats = t1p_sell_stragety_feature(klu, last_bsp, data_src.get_df(), index,
+                                                              last_bsp.klu.idx, cur_lv_chan)
+                    t1p_bsp_sell_dict[last_bsp.klu.idx]['feature'].add_feat(t1p_bsp_feats)
 
-                if (BSP_TYPE.T2 in last_bsp.type) and last_bsp.bi.pre:
-                    zs_end_klu_idx = -1
-                    if cur_lv_chan.zs_list and cur_lv_chan.zs_list[-1]:
-                        zs_end_klu_idx = cur_lv_chan.zs_list[-1].end_bi.get_end_klu().idx
-                    # print('(BSP_TYPE.T2 in last_bsp.type) and last_bsp.bi.pre', last_bsp.klu.idx, last_bsp.klu.time, len(cur_lv_chan.seg_list), len(cur_lv_chan.zs_list),
-                    #       zs_end_klu_idx)
-                    if last_bsp.is_buy:
-                        t2_bsp_buy_dict[last_bsp.klu.idx] = {
-                            "is_buy": last_bsp.is_buy,
-                            "open_time": klu.time,
-                        }
-                        t2_bsp_buy_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp2_", last_bsp.features)
-                        t2_bsp_feats = t2_buy_stragety_feature(klu, last_bsp, data_src.get_df(), index,
-                                                                 last_bsp.klu.idx, cur_lv_chan)
-                        t2_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(t2_bsp_feats)
-                    else:
-                        t2_bsp_sell_dict[last_bsp.klu.idx] = {
-                            "is_buy": last_bsp.is_buy,
-                            "open_time": klu.time,
-                        }
-                        t2_bsp_sell_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp2_", last_bsp.features)
-                        t2_bsp_feats = t2_sell_stragety_feature(klu, last_bsp, data_src.get_df(), index,
-                                                               last_bsp.klu.idx, cur_lv_chan)
-                        t2_bsp_sell_dict[last_bsp.klu.idx]['feature'].add_feat(t2_bsp_feats)
-                if (BSP_TYPE.T2S in last_bsp.type) and last_bsp.bi.pre:
-                    if last_bsp.is_buy:
-                        t2s_bsp_buy_dict[last_bsp.klu.idx] = {
-                            "feature": copy.deepcopy(last_bsp.features),
-                            "is_buy": last_bsp.is_buy,
-                            "open_time": klu.time,
-                        }
-                        t2s_bsp_buy_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp2s_", last_bsp.features)
-                        t2s_bsp_feats = t2s_buy_stragety_feature(klu, last_bsp, data_src.get_df(), index,
-                                                               last_bsp.klu.idx, cur_lv_chan)
-                        t2s_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(t2s_bsp_feats)
-                    else:
-                        t2s_bsp_sell_dict[last_bsp.klu.idx] = {
-                            "is_buy": last_bsp.is_buy,
-                            "open_time": klu.time,
-                        }
-                        t2s_bsp_sell_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp2s_", last_bsp.features)
-                        t2s_bsp_feats = t2s_sell_stragety_feature(klu, last_bsp, data_src.get_df(), index,
-                                                                last_bsp.klu.idx, cur_lv_chan)
-                        t2s_bsp_sell_dict[last_bsp.klu.idx]['feature'].add_feat(t2s_bsp_feats)                # print(last_bsp.klu.time, last_bsp.is_buy)
+            if (BSP_TYPE.T2 in last_bsp.type) and last_bsp.bi.pre:
+                zs_end_klu_idx = -1
+                if cur_lv_chan.zs_list and cur_lv_chan.zs_list[-1]:
+                    zs_end_klu_idx = cur_lv_chan.zs_list[-1].end_bi.get_end_klu().idx
+                # print('(BSP_TYPE.T2 in last_bsp.type) and last_bsp.bi.pre', last_bsp.klu.idx, last_bsp.klu.time, len(cur_lv_chan.seg_list), len(cur_lv_chan.zs_list),
+                #       zs_end_klu_idx)
+                if last_bsp.is_buy:
+                    t2_bsp_buy_dict[last_bsp.klu.idx] = {
+                        "is_buy": last_bsp.is_buy,
+                        "open_time": klu.time,
+                    }
+                    t2_bsp_buy_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp2_", last_bsp.features)
+                    t2_bsp_feats = t2_buy_stragety_feature(klu, last_bsp, data_src.get_df(), index,
+                                                           last_bsp.klu.idx, cur_lv_chan)
+                    t2_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(t2_bsp_feats)
+                else:
+                    t2_bsp_sell_dict[last_bsp.klu.idx] = {
+                        "is_buy": last_bsp.is_buy,
+                        "open_time": klu.time,
+                    }
+                    t2_bsp_sell_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp2_", last_bsp.features)
+                    t2_bsp_feats = t2_sell_stragety_feature(klu, last_bsp, data_src.get_df(), index,
+                                                            last_bsp.klu.idx, cur_lv_chan)
+                    t2_bsp_sell_dict[last_bsp.klu.idx]['feature'].add_feat(t2_bsp_feats)
+            if (BSP_TYPE.T2S in last_bsp.type) and last_bsp.bi.pre:
+                if last_bsp.is_buy:
+                    t2s_bsp_buy_dict[last_bsp.klu.idx] = {
+                        "feature": copy.deepcopy(last_bsp.features),
+                        "is_buy": last_bsp.is_buy,
+                        "open_time": klu.time,
+                    }
+                    t2s_bsp_buy_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp2s_", last_bsp.features)
+                    t2s_bsp_feats = t2s_buy_stragety_feature(klu, last_bsp, data_src.get_df(), index,
+                                                             last_bsp.klu.idx, cur_lv_chan)
+                    t2s_bsp_buy_dict[last_bsp.klu.idx]['feature'].add_feat(t2s_bsp_feats)
+                else:
+                    t2s_bsp_sell_dict[last_bsp.klu.idx] = {
+                        "is_buy": last_bsp.is_buy,
+                        "open_time": klu.time,
+                    }
+                    t2s_bsp_sell_dict[last_bsp.klu.idx]['feature'] = copy_features("bsp2s_", last_bsp.features)
+                    t2s_bsp_feats = t2s_sell_stragety_feature(klu, last_bsp, data_src.get_df(), index,
+                                                              last_bsp.klu.idx, cur_lv_chan)
+                    t2s_bsp_sell_dict[last_bsp.klu.idx]['feature'].add_feat(
+                        t2s_bsp_feats)  # print(last_bsp.klu.time, last_bsp.is_buy)
 
-        seg = chan[0].seg_list[-1]
-        while not seg.is_sure:
-            print("end klu",seg.get_end_klu().idx,data_src.get_df().loc[seg.get_end_klu().idx,'date'])
-            print("begin klu",seg.get_begin_klu().idx,data_src.get_df().loc[seg.get_begin_klu().idx,'date'])
-            seg = seg.pre
-        t1_bsp_buy_dict.items()
-        print("笔")
-        bi = chan[0].bi_list[-1]
-        while not bi.is_sure:
-            print("end klu",bi.get_end_klu().idx,data_src.get_df().loc[bi.get_end_klu().idx,'date'])
-            print("begin klu",bi.get_begin_klu().idx,data_src.get_df().loc[bi.get_begin_klu().idx,'date'])
-            bi = bi.pre
+    seg = chan[0].seg_list[-1]
+    while not seg.is_sure:
+        print("end klu", seg.get_end_klu().idx, data_src.get_df().loc[seg.get_end_klu().idx, 'date'])
+        print("begin klu", seg.get_begin_klu().idx, data_src.get_df().loc[seg.get_begin_klu().idx, 'date'])
+        seg = seg.pre
+    t1_bsp_buy_dict.items()
+    print("笔")
+    bi = chan[0].bi_list[-1]
+    while not bi.is_sure:
+        print("end klu", bi.get_end_klu().idx, data_src.get_df().loc[bi.get_end_klu().idx, 'date'])
+        print("begin klu", bi.get_begin_klu().idx, data_src.get_df().loc[bi.get_begin_klu().idx, 'date'])
+        bi = bi.pre
 
-        # new_t1_bsp_buy_dict =  copy_dict(t1_bsp_buy_dict, seg)
-        # print("=============T1 buy start ====================")
-        # save_libsvm_file(chan, new_t1_bsp_buy_dict, BSP_TYPE.T1, True)
-        # t1_buy_xgb_model = XGB_Model("T1_buy_",False,'T1_buy_smote_train.libsvm')
-        # t1_buy_best_params, t1_buy_best_num_round = t1_buy_xgb_model.bayyesian_optimize()
-        # # t1_buy_best_params = {'colsample_bytree': 0.4993244980737337, 'eta': 0.7093045290075815, 'gamma': 4.438764086333725, 'learning_rate': 0.10228260817983205, 'max_depth': 3.8535004115778904, 'min_child_weight': 5.278468515999386, 'reg_alpha': 1.905179819449736, 'reg_lambda': 3.178221766051079, 'scale_pos_weight': 4.542969346434627, 'subsample': 0.71274896747512}
-        # # t1_buy_best_num_round = 200
-        # t1_buy_xgb_model.model_tuning(t1_buy_best_params, t1_buy_best_num_round)
-        # print("=============T1 buy end ====================")
-        # print("=============T1 sell start ====================")
-        # new_t1_bsp_sell_dict = copy_dict(t1_bsp_sell_dict, seg)
-        # save_libsvm_file(chan, new_t1_bsp_sell_dict, BSP_TYPE.T1, False)
-        # t1_sell_xgb_model = XGB_Model("T1_sell_", False,'T1_sell_smote_tomek_train.libsvm')
-        # t1_sell_best_params, t1_sell_best_num_round = t1_sell_xgb_model.bayyesian_optimize()
-        # print(t1_sell_best_params)
-        # print(t1_sell_best_num_round)
-        # # t1_sell_best_params =  {'colsample_bytree': 0.3, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 10.0, 'min_child_weight': 6.753938667127704, 'reg_alpha': 0.39482443668774725, 'reg_lambda': 0.0, 'scale_pos_weight': 1.0, 'subsample': 0.5}
-        # # t1_sell_best_params =  {'colsample_bytree': 0.3, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 10.0, 'min_child_weight': 6.753938667127704, 'reg_alpha': 0.39482443668774725, 'reg_lambda': 0.0, 'scale_pos_weight': 1.0, 'subsample': 0.5}
-        # # t1_sell_best_num_round = 200
-        # # print(t1_sell_best_params)
-        # # print(t1_sell_best_num_round)
-        # t1_sell_xgb_model.model_tuning(t1_sell_best_params, t1_sell_best_num_round)
-        # print("=============T1 sell end ====================")
-        # print("=============T1P buy start ====================")
-        # new_t1p_bsp_buy_dict =  copy_dict(t1p_bsp_buy_dict, seg)
-        #
-        # save_libsvm_file(chan, new_t1p_bsp_buy_dict, BSP_TYPE.T1P, True,True)
-        # t1p_buy_xgb_model = XGB_Model("T1P_buy_",False)
-        # t1p_buy_best_params, t1p_buy_best_num_round = t1p_buy_xgb_model.bayyesian_optimize()
-        # # t1p_buy_best_params = {'colsample_bytree': 0.3, 'eta': 0.1, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 1.0, 'min_child_weight': 3.0249634705601984, 'reg_alpha': 0.0, 'reg_lambda': 0.0, 'scale_pos_weight': 5.0, 'subsample': 0.5}
-        # # t1p_buy_best_num_round = 200
-        # t1p_buy_xgb_model.model_tuning(t1p_buy_best_params, t1p_buy_best_num_round)
-        # print("=============T1P buy end ====================")
-        # print("=============T1P sell start ====================")
-        # new_t1p_bsp_sell_dict = copy_dict(t1p_bsp_sell_dict, seg)
-        # save_libsvm_file(chan, new_t1p_bsp_sell_dict, BSP_TYPE.T1P, False)
-        # t1p_sell_xgb_model =  XGB_Model("T1P_sell_",False,'T1P_sell_smote_train.libsvm')
-        # t1p_sell_best_params,  t1p_sell_best_num_round = t1p_sell_xgb_model.bayyesian_optimize()
-        # #  t1p_sell_best_params =  {'colsample_bytree': 0.3, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 10.0, 'min_child_weight': 6.753938667127704, 'reg_alpha': 0.39482443668774725, 'reg_lambda': 0.0, 'scale_pos_weight': 1.0, 'subsample': 0.5}
-        # #  t1p_sell_best_num_round = 200
-        # t1p_sell_xgb_model.model_tuning(t1p_sell_best_params, t1p_sell_best_num_round)
-        # print("=============T1P sell end ====================")
-        # print("=============T2 buy start ====================")
-        # new_t2_bsp_buy_dict = copy_dict(t2_bsp_buy_dict, seg)
-        # save_libsvm_file(chan, new_t2_bsp_buy_dict, BSP_TYPE.T2, True,True)
-        # t2_buy_xgb_model =XGB_Model("T2_buy_",False,'T2_buy_smote_tomek_train.libsvm')
-        # t2_buy_best_params, t2_buy_best_num_round = t2_buy_xgb_model.bayyesian_optimize()
-        # t2_buy_xgb_model.model_tuning(t2_buy_best_params, t2_buy_best_num_round)
-        # print("=============T2 buy end ====================")
-        # print("=============T2 sell start ====================")
-        # new_t2_bsp_sell_dict = copy_dict(t2_bsp_sell_dict, seg)
-        # save_libsvm_file(chan, new_t2_bsp_sell_dict, BSP_TYPE.T2, False,True)
-        # t2_sell_xgb_model =XGB_Model("T2_sell_",False)
-        # t2_sell_best_params, t2_sell_best_num_round = t2_sell_xgb_model.bayyesian_optimize()
-        # #  t2_sell_best_params =  {'colsample_bytree': 0.3, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 10.0, 'min_child_weight': 6.753938667127704, 'reg_alpha': 0.39482443668774725, 'reg_lambda': 0.0, 'scale_pos_weight': 1.0, 'subsample': 0.5}
-        # #  t2_sell_best_num_round = 200
-        # t2_sell_xgb_model.model_tuning(t2_sell_best_params, t2_sell_best_num_round)
-        # print("=============T2 sell end ====================")
-        print("=============T2S buy start ====================")
-        new_t2s_bsp_buy_dict = copy_dict(t2s_bsp_buy_dict, seg)
-        save_libsvm_file(chan, new_t2s_bsp_buy_dict, BSP_TYPE.T2S, True,True)
-        t2s_buy_xgb_model = XGB_Model("T2S_buy_",False,'T2S_buy_smote_tomek_train.libsvm')
-        t2s_buy_xgb_model.bayyesian_optimize()
-        #  t2s_buy_xgb_model =  {'colsample_bytree': 0.3, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 10.0, 'min_child_weight': 6.753938667127704, 'reg_alpha': 0.39482443668774725, 'reg_lambda': 0.0, 'scale_pos_weight': 1.0, 'subsample': 0.5}
-        #  t2s_buy_best_params = 200
-        t2s_buy_xgb_model.model_tuning()
-        print("=============T2S buy end ====================")
-        # print("=============T2S sell start ====================")
-        # new_t2s_bsp_sell_dict = copy_dict(t2s_bsp_sell_dict, seg)
-        # save_libsvm_file(chan, new_t2s_bsp_sell_dict, BSP_TYPE.T2S, False)
-        # t2s_sell_xgb_model = XGB_Model("T2S_sell_", True)
-        # t2s_sell_best_params, t2s_sell_best_num_round = t2s_sell_xgb_model.bayyesian_optimize()
-        # #  t2s_sell_best_params =  {'colsample_bytree': 0.3, 'eta': 1.0, 'gamma': 5.0, 'learning_rate': 0.01, 'max_depth': 10.0, 'min_child_weight': 6.753938667127704, 'reg_alpha': 0.39482443668774725, 'reg_lambda': 0.0, 'scale_pos_weight': 1.0, 'subsample': 0.5}
-        # #  t2s_sell_best_num_round = 200
-        # t2s_sell_xgb_model.model_tuning(t2s_sell_best_params, t2s_sell_best_num_round)
-        # print("=============T2 sell end ====================")
-
+    new_t1_bsp_buy_dict = copy_dict(t1_bsp_buy_dict, seg)
+    print("=============T1 buy start ====================")
+    save_libsvm_file(chan, new_t1_bsp_buy_dict, BSP_TYPE.T1, True)
+    t1_buy_xgb_model = XGB_Model("T1_buy", False, 'T1_buy_smote_tomek_train.libsvm')
+    t1_buy_xgb_model.bayyesian_optimize()
+    t1_buy_xgb_model.model_tuning()
+    print("=============T1 buy end ====================")
+    print("=============T1 sell start ====================")
+    new_t1_bsp_sell_dict = copy_dict(t1_bsp_sell_dict, seg)
+    save_libsvm_file(chan, new_t1_bsp_sell_dict, BSP_TYPE.T1, False)
+    t1_sell_xgb_model = XGB_Model("T1_sell", False, 'T1_sell_somteenn_train.libsvm')
+    t1_sell_xgb_model.bayyesian_optimize()
+    t1_sell_xgb_model.model_tuning()
+    print("=============T1 sell end ====================")
+    print("=============T1P buy start ====================")
+    new_t1p_bsp_buy_dict = copy_dict(t1p_bsp_buy_dict, seg)
+    save_libsvm_file(chan, new_t1p_bsp_buy_dict, BSP_TYPE.T1P, True, True)
+    t1p_buy_xgb_model = XGB_Model("T1P_buy_selected", False,'T1P_buy_selected_train.libsvm')
+    t1p_buy_xgb_model.bayyesian_optimize()
+    t1p_buy_xgb_model.model_tuning()
+    print("=============T1P buy end ====================")
+    print("=============T1P sell start ====================")
+    new_t1p_bsp_sell_dict = copy_dict(t1p_bsp_sell_dict, seg)
+    save_libsvm_file(chan, new_t1p_bsp_sell_dict, BSP_TYPE.T1P, False)
+    # T1P_sell_selected_, is_cv: False, train_file_name: T1P_sell_selected_train.libsvm, flag: start
+    # 0.659433 0.694435
+    t1p_sell_xgb_model = XGB_Model("T1P_sell_selected", False, 'T1P_sell_selected_train.libsvm')
+    t1p_sell_xgb_model.bayyesian_optimize()
+    t1p_sell_xgb_model.model_tuning()
+    print("=============T1P sell end ====================")
+    print("=============T2 buy start ====================")
+    new_t2_bsp_buy_dict = copy_dict(t2_bsp_buy_dict, seg)
+    save_libsvm_file(chan, new_t2_bsp_buy_dict, BSP_TYPE.T2, True, True)
+    # T2_buy_, is_cv: False, train_file_name: T2_buy_smote_train.libsvm, flag: start
+    # 0.701164 0.644913
+    t2_buy_xgb_model = XGB_Model("T2_buy", False, 'T2_buy_smote_train.libsvm')
+    t2_buy_xgb_model.bayyesian_optimize()
+    t2_buy_xgb_model.model_tuning()
+    print("=============T2 buy end ====================")
+    print("=============T2 sell start ====================")
+    new_t2_bsp_sell_dict = copy_dict(t2_bsp_sell_dict, seg)
+    save_libsvm_file(chan, new_t2_bsp_sell_dict, BSP_TYPE.T2, False, True)
+    # T2_sell_selected_, is_cv: False, train_file_name: T2_sell_selected_train.libsvm, flag: start
+    # 0.708090 0.703660
+    t2_sell_xgb_model = XGB_Model("T2_sell_selected", False,'T2_sell_selected_train.libsvm')
+    t2_sell_xgb_model.bayyesian_optimize()
+    t2_sell_xgb_model.model_tuning()
+    print("=============T2 sell end ====================")
+    print("=============T2S buy start ====================")
+    new_t2s_bsp_buy_dict = copy_dict(t2s_bsp_buy_dict, seg)
+    save_libsvm_file(chan, new_t2s_bsp_buy_dict, BSP_TYPE.T2S, True, True)
+    # T2S_buy_selected_, is_cv: False, train_file_name: T2S_buy_selected_smote_train.libsvm, flag: start
+    # 0.656421 0.624589
+    t2s_buy_xgb_model = XGB_Model("T2S_buy_selected", False, 'T2S_buy_selected_smote_train.libsvm')
+    t2s_buy_xgb_model.bayyesian_optimize()
+    t2s_buy_xgb_model.model_tuning()
+    print("=============T2S buy end ====================")
+    print("=============T2S sell start ====================")
+    new_t2s_bsp_sell_dict = copy_dict(t2s_bsp_sell_dict, seg)
+    save_libsvm_file(chan, new_t2s_bsp_sell_dict, BSP_TYPE.T2S, False, True)
+    # T2S_sell_selected_, is_cv: False, train_file_name: T2S_sell_selected_somteenn_train.libsvm, flag: start
+    # 0.707120 0.713012
+    t2s_sell_xgb_model = XGB_Model("T2S_sell", False, 'T2S_sell_smote_train.libsvm')
+    t2s_sell_xgb_model.bayyesian_optimize()
+    t2s_sell_xgb_model.model_tuning()
+    print("=============T2 sell end ====================")

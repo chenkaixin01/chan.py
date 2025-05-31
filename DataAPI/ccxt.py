@@ -6,6 +6,7 @@ from Common.CEnum import AUTYPE, DATA_FIELD, KL_TYPE
 from Common.CTime import CTime
 from Common.func_util import kltype_lt_day, str2float
 from KLine.KLine_Unit import CKLine_Unit
+from datetime import datetime, timedelta
 
 from .CommonStockAPI import CCommonStockApi
 
@@ -26,13 +27,23 @@ class CCXT(CCommonStockApi):
 
     def __init__(self, code, k_type=KL_TYPE.K_DAY, begin_date=None, end_date=None, autype=AUTYPE.QFQ):
         super(CCXT, self).__init__(code, k_type, begin_date, end_date, autype)
+        self.exchange = ccxt.binance({
+            'proxies': {
+                'http': 'http://127.0.0.1:8890',
+                'https': 'http://127.0.0.1:8890'
+            }
+        })
 
     def get_kl_data(self):
-        fields = "time,open,high,low,close"
-        exchange = ccxt.binance()
-        timeframe = self.__convert_type()
-        since_date = exchange.parse8601(f'{self.begin_date}T00:00:00')
-        data = exchange.fetch_ohlcv(self.code, timeframe, since=since_date)
+        fields = "time,open,high,low,close,volume"
+        # 获取当前时间
+        now = datetime.now()
+
+        # 计算15天前的时间
+        fifteen_days_ago = now - timedelta(days=15)
+
+        since_date = self.exchange.parse8601(fifteen_days_ago.timestamp())
+        data = self.exchange.fetch_ohlcv("BTC/USDT:USDT", "15m", since=since_date)
 
         for item in data:
             time_obj = datetime.fromtimestamp(item[0] / 1000)
@@ -42,7 +53,31 @@ class CCXT(CCommonStockApi):
                 item[1],
                 item[2],
                 item[3],
-                item[4]
+                item[4],
+                item[5]
+            ]
+            yield CKLine_Unit(self.create_item_dict(item_data, GetColumnNameFromFieldList(fields)), autofix=True)
+    def get_now_kl_data(self):
+        fields = "time,open,high,low,close,volume"
+        # 获取当前时间
+        now = datetime.now()
+
+        # 计算15天前的时间
+        fifteen_days_ago = now - timedelta(days=15)
+
+        since_date = self.exchange.parse8601(fifteen_days_ago.timestamp())
+        data = self.exchange.fetch_ohlcv("BTC/USDT:USDT", "15m", since=since_date)
+
+        for item in data:
+            time_obj = datetime.fromtimestamp(item[0] / 1000)
+            time_str = time_obj.strftime('%Y-%m-%d %H:%M:%S')
+            item_data = [
+                time_str,
+                item[1],
+                item[2],
+                item[3],
+                item[4],
+                item[5]
             ]
             yield CKLine_Unit(self.create_item_dict(item_data, GetColumnNameFromFieldList(fields)), autofix=True)
 
